@@ -8,6 +8,31 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tracker-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-export {
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.btn-export:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
 }
 
 .tracker-title {
@@ -181,6 +206,145 @@
   background: rgba(224, 92, 106, 0.15);
   color: var(--red);
 }
+
+/* ── Expand button ───────────────────────────────────────────── */
+
+.btn-expand {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.btn-expand:hover { color: var(--accent); }
+
+.row-expanded td { background: rgba(108, 142, 247, 0.04); }
+
+.tracker-location {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Tag system ──────────────────────────────────────────────── */
+
+.tag-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-filter-label { font-size: 0.78rem; color: var(--text-muted); }
+
+.tag-filter-chip {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 2px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tag-filter-chip:hover, .tag-filter-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(108, 142, 247, 0.1);
+}
+
+.tag-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(108, 142, 247, 0.12);
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 0.75rem;
+  padding: 0;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.tag-remove:hover { opacity: 1; }
+
+.tag-input {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: inherit;
+  outline: none;
+  width: 65px;
+}
+
+/* ── Detail panel ────────────────────────────────────────────── */
+
+.detail-row td {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: rgba(0,0,0,0.15);
+}
+
+.detail-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.detail-section h4 {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+}
+
+.detail-grid > div { display: flex; flex-direction: column; gap: 3px; }
+
+.detail-grid label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-wide { grid-column: 1 / -1; }
 
 /* ── Delete button ──────────────────────────────────────────── */
 

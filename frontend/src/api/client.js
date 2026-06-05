@@ -52,6 +52,65 @@ export async function emailSavedJobs(to) {
   return res.json()
 }
 
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+export async function getSettings() {
+  const res = await fetch(`${BASE}/settings`)
+  if (!res.ok) throw new Error(`Failed to load settings: ${res.status}`)
+  return res.json()
+}
+
+export async function saveSettings(data) {
+  const res = await fetch(`${BASE}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Failed to save settings: ${res.status}`)
+  return res.json()
+}
+
+// ── Saved Searches ────────────────────────────────────────────────────────────
+
+export async function getSavedSearches() {
+  const res = await fetch(`${BASE}/searches`)
+  if (!res.ok) throw new Error(`Failed to load searches: ${res.status}`)
+  return res.json()
+}
+
+export async function createSavedSearch(data) {
+  const res = await fetch(`${BASE}/searches`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Failed to save search: ${res.status}`)
+  return res.json()
+}
+
+export async function updateSavedSearch(id, data) {
+  const res = await fetch(`${BASE}/searches/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Failed to update search: ${res.status}`)
+  return res.json()
+}
+
+export async function deleteSavedSearch(id) {
+  const res = await fetch(`${BASE}/searches/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`Failed to delete search: ${res.status}`)
+}
+
+export async function runSavedSearch(id) {
+  const res = await fetch(`${BASE}/searches/${id}/run`, { method: 'POST' })
+  if (!res.ok) throw new Error(`Failed to run search: ${res.status}`)
+  return res.json()
+}
+
+// ── Tracker ───────────────────────────────────────────────────────────────────
+
 export async function getTrackerEntries() {
   const res = await fetch(`${BASE}/tracker`)
   if (!res.ok) throw new Error(`Failed to load tracker: ${res.status}`)
