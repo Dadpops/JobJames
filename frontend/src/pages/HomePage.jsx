@@ -27,7 +27,11 @@ export default function HomePage() {
   async function handleStatusChange(jobId, status) {
     try {
       const updated = await updateJobStatus(jobId, status)
-      setJobs(prev => prev.map(j => (j.id === updated.id ? updated : j)))
+      if (status === 'dismissed') {
+        setJobs(prev => prev.filter(j => j.id !== jobId))
+      } else {
+        setJobs(prev => prev.map(j => (j.id === updated.id ? updated : j)))
+      }
     } catch (err) {
       console.error('Status update failed', err)
     }
