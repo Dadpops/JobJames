@@ -80,6 +80,9 @@ _MIGRATIONS = [
     "ALTER TABLE tracker ADD COLUMN company_size TEXT",
     "ALTER TABLE tracker ADD COLUMN company_industry TEXT",
     "ALTER TABLE tracker ADD COLUMN company_notes TEXT",
+    "ALTER TABLE tracker ADD COLUMN sort_order INTEGER",
+    "ALTER TABLE saved_searches ADD COLUMN recipient_email TEXT",
+    "ALTER TABLE saved_searches ADD COLUMN result_limit INTEGER DEFAULT 10",
 ]
 
 
@@ -154,7 +157,9 @@ def _parse_tracker_row(row: dict) -> dict:
 async def get_tracker_entries() -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM tracker ORDER BY date_added DESC") as cur:
+        async with db.execute(
+            "SELECT * FROM tracker ORDER BY COALESCE(sort_order, 999999) ASC, date_added DESC"
+        ) as cur:
             return [_parse_tracker_row(dict(r)) for r in await cur.fetchall()]
 
 
@@ -265,12 +270,22 @@ async def get_saved_search(search_id: str) -> dict | None:
 async def create_saved_search(row: dict) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            """INSERT INTO saved_searches (id, name, criteria_json, schedule, is_enabled, created_at)
-               VALUES (:id, :name, :criteria_json, :schedule, :is_enabled, :created_at)""",
+            """INSERT INTO saved_searches
+               (id, name, criteria_json, schedule, is_enabled, created_at, recipient_email, result_limit)
+               VALUES (:id, :name, :criteria_json, :schedule, :is_enabled, :created_at,
+                       :recipient_email, :result_limit)""",
             row,
         )
         await db.commit()
     return await get_saved_search(row["id"])
+
+
+async def bulk_reorder_tracker(items: list[dict]) -> None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.executemany(
+            "UPDATE tracker SET sort_order = :sort_order WHERE id = :id", items
+        )
+        await db.commit()
 
 
 async def update_saved_search(search_id: str, fields: dict) -> dict | None:

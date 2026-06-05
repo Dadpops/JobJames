@@ -42,7 +42,60 @@ async def run_saved_search(search_id: str) -> int:
     await upsert_jobs([_to_row(j) for j in ranked])
     await touch_saved_search(search_id)
     log.info("Ran saved search '%s' — %d results", row["name"], len(ranked))
+
+    email_to = (row.get("recipient_email") or "").strip()
+    if email_to and ranked:
+        from app.services.email_service import send_email
+        limit = int(row.get("result_limit") or 10)
+        top = ranked[:limit]
+        html = _build_search_results_html(row["name"], top)
+        try:
+            await send_email(email_to, f"JobJames — {row['name']}", html)
+            log.info("Search results emailed to %s", email_to)
+        except Exception as exc:
+            log.error("Search results email failed: %s", exc)
+
     return len(ranked)
+
+
+def _build_search_results_html(search_name: str, jobs: list) -> str:
+    now = datetime.now().strftime("%B %d, %Y")
+    rows = ""
+    for job in jobs:
+        salary = ""
+        if job.salary_min or job.salary_max:
+            lo = f"${job.salary_min:,}" if job.salary_min else ""
+            hi = f"${job.salary_max:,}" if job.salary_max else ""
+            salary = f"{lo}–{hi}" if lo and hi else lo or hi
+        rows += f"""
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #2a2d3a;">
+            <a href="{job.url}" style="color:#6c8ef7;text-decoration:none;">{job.title}</a>
+          </td>
+          <td style="padding:8px;border-bottom:1px solid #2a2d3a;">{job.company}</td>
+          <td style="padding:8px;border-bottom:1px solid #2a2d3a;color:#7a7e9a;">{job.location or '—'}</td>
+          <td style="padding:8px;border-bottom:1px solid #2a2d3a;color:#7a7e9a;">{salary or '—'}</td>
+          <td style="padding:8px;border-bottom:1px solid #2a2d3a;color:#7a7e9a;">{job.source}</td>
+        </tr>"""
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="background:#0f1117;color:#e2e4f0;font-family:system-ui,sans-serif;padding:32px;">
+  <h1 style="color:#6c8ef7;">JobJames — {search_name}</h1>
+  <p style="color:#7a7e9a;">{now} · {len(jobs)} result{'s' if len(jobs) != 1 else ''}</p>
+  <table style="width:100%;border-collapse:collapse;background:#1a1d27;border-radius:8px;overflow:hidden;">
+    <thead><tr>
+      <th style="padding:8px;text-align:left;color:#7a7e9a;font-size:11px;text-transform:uppercase;">Title</th>
+      <th style="padding:8px;text-align:left;color:#7a7e9a;font-size:11px;text-transform:uppercase;">Company</th>
+      <th style="padding:8px;text-align:left;color:#7a7e9a;font-size:11px;text-transform:uppercase;">Location</th>
+      <th style="padding:8px;text-align:left;color:#7a7e9a;font-size:11px;text-transform:uppercase;">Salary</th>
+      <th style="padding:8px;text-align:left;color:#7a7e9a;font-size:11px;text-transform:uppercase;">Source</th>
+    </tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
+  <p style="color:#7a7e9a;font-size:12px;margin-top:32px;">Sent by JobJames</p>
+</body>
+</html>"""
 
 
 # ── Digest sender ─────────────────────────────────────────────────────────────

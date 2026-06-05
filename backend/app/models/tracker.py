@@ -13,6 +13,7 @@ class TrackerStatus(str, Enum):
     interviewing = "Interviewing"
     offer = "Offer"
     rejected = "Rejected"
+    dismissed = "Dismissed"
 
 
 class TrackerEntry(BaseModel):
@@ -27,6 +28,7 @@ class TrackerEntry(BaseModel):
     deadline: Optional[str] = None
     notes: Optional[str] = None
     tags: list[str] = []
+    sort_order: Optional[int] = None
     recruiter_name: Optional[str] = None
     recruiter_email: Optional[str] = None
     recruiter_linkedin: Optional[str] = None
@@ -46,6 +48,7 @@ class TrackerCreate(BaseModel):
     url: Optional[str] = None
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
+    status: Optional[str] = "Found"
 
 
 class TrackerUpdate(BaseModel):
@@ -54,6 +57,7 @@ class TrackerUpdate(BaseModel):
     deadline: Optional[str] = None
     notes: Optional[str] = None
     tags: Optional[list[str]] = None
+    sort_order: Optional[int] = None
     recruiter_name: Optional[str] = None
     recruiter_email: Optional[str] = None
     recruiter_linkedin: Optional[str] = None

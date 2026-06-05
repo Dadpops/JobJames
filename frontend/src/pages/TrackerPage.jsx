@@ -1,14 +1,16 @@
-import { useEffect, useState, useRef } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   getTrackerEntries, addTrackerEntry, updateTrackerEntry, deleteTrackerEntry,
+  reorderTrackerEntries,
 } from '../api/client'
 import './TrackerPage.css'
 
-const STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected']
+const STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected', 'Dismissed']
 
 const STATUS_CLASS = {
   Found: 'status-found', Reviewing: 'status-reviewing', Applied: 'status-applied',
   Interviewing: 'status-interviewing', Offer: 'status-offer', Rejected: 'status-rejected',
+  Dismissed: 'status-dismissed',
 }
 
 function isOverdue(dateStr) {
@@ -180,13 +182,22 @@ export default function TrackerPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [expanded, setExpanded] = useState(new Set())
   const [filterTag, setFilterTag] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('active') // 'active' | status | null (all)
 
   useEffect(() => {
     getTrackerEntries().then(setEntries).finally(() => setLoading(false))
   }, [])
 
   const allTags = [...new Set(entries.flatMap(e => e.tags || []))]
-  const visible = filterTag ? entries.filter(e => (e.tags || []).includes(filterTag)) : entries
+
+  const visible = entries.filter(e => {
+    if (filterTag && !(e.tags || []).includes(filterTag)) return false
+    if (filterStatus === 'active') return e.status !== 'Dismissed'
+    if (filterStatus) return e.status === filterStatus
+    return true
+  })
+
+  const canReorder = !filterTag
 
   async function handleUpdate(id, fields) {
     try {
@@ -203,7 +214,23 @@ export default function TrackerPage() {
     setExpanded(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
+  async function moveEntry(visibleIdx, direction) {
+    const swapVisibleIdx = visibleIdx + direction
+    if (swapVisibleIdx < 0 || swapVisibleIdx >= visible.length) return
+    const idxA = entries.findIndex(e => e.id === visible[visibleIdx].id)
+    const idxB = entries.findIndex(e => e.id === visible[swapVisibleIdx].id)
+    const next = [...entries]
+    ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
+    setEntries(next)
+    try {
+      await reorderTrackerEntries(next.map((e, i) => ({ id: e.id, sort_order: i })))
+    } catch {}
+  }
+
   if (loading) return <p className="tracker-empty">Loading…</p>
+
+  const activeCount = entries.filter(e => e.status !== 'Dismissed').length
+  const dismissedCount = entries.filter(e => e.status === 'Dismissed').length
 
   return (
     <div className="tracker-page">
@@ -215,26 +242,59 @@ export default function TrackerPage() {
         </div>
       </div>
 
-      {allTags.length > 0 && (
-        <div className="tag-filter-row">
-          <span className="tag-filter-label">Filter by tag:</span>
-          <button className={`tag-filter-chip ${!filterTag ? 'active' : ''}`} onClick={() => setFilterTag(null)}>All</button>
-          {allTags.map(t => (
-            <button key={t} className={`tag-filter-chip ${filterTag === t ? 'active' : ''}`} onClick={() => setFilterTag(t === filterTag ? null : t)}>{t}</button>
+      <div className="tracker-filters">
+        <div className="status-filter-row">
+          <span className="tag-filter-label">Status:</span>
+          <button
+            className={`tag-filter-chip ${filterStatus === 'active' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('active')}
+          >Active{activeCount > 0 ? ` (${activeCount})` : ''}</button>
+          {STATUSES.filter(s => s !== 'Dismissed').map(s => (
+            <button
+              key={s}
+              className={`tag-filter-chip status-chip-${STATUS_CLASS[s]} ${filterStatus === s ? 'active' : ''}`}
+              onClick={() => setFilterStatus(filterStatus === s ? 'active' : s)}
+            >{s}</button>
           ))}
+          <button
+            className={`tag-filter-chip ${filterStatus === null ? 'active' : ''}`}
+            onClick={() => setFilterStatus(null)}
+          >All</button>
+          {dismissedCount > 0 && (
+            <button
+              className={`tag-filter-chip ${filterStatus === 'Dismissed' ? 'active' : ''}`}
+              onClick={() => setFilterStatus(filterStatus === 'Dismissed' ? 'active' : 'Dismissed')}
+            >Dismissed ({dismissedCount})</button>
+          )}
         </div>
-      )}
+
+        {allTags.length > 0 && (
+          <div className="tag-filter-row">
+            <span className="tag-filter-label">Tag:</span>
+            <button className={`tag-filter-chip ${!filterTag ? 'active' : ''}`} onClick={() => setFilterTag(null)}>All</button>
+            {allTags.map(t => (
+              <button key={t} className={`tag-filter-chip ${filterTag === t ? 'active' : ''}`} onClick={() => setFilterTag(t === filterTag ? null : t)}>{t}</button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {visible.length === 0 ? (
         <div className="tracker-empty">
-          {filterTag ? <p>No jobs tagged "{filterTag}".</p> : <><p>No jobs in your tracker yet.</p><p>Use <strong>Save to Tracker</strong> on a search result, or add one manually.</p></>}
+          {filterStatus === 'Dismissed'
+            ? <p>No dismissed jobs.</p>
+            : filterTag
+              ? <p>No jobs tagged "{filterTag}".</p>
+              : entries.length === 0
+                ? <><p>No jobs in your tracker yet.</p><p>Use <strong>Save to Tracker</strong> on a search result, or add one manually.</p></>
+                : <p>No jobs match the current filter.</p>}
         </div>
       ) : (
         <div className="tracker-table-wrap">
           <table className="tracker-table">
             <thead>
               <tr>
-                <th></th>
+                <th className="col-controls"></th>
                 <th>Job Title</th>
                 <th>Company</th>
                 <th>Status</th>
@@ -246,13 +306,29 @@ export default function TrackerPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map(entry => (
-                <>
-                  <tr key={entry.id} className={expanded.has(entry.id) ? 'row-expanded' : ''}>
-                    <td>
+              {visible.map((entry, idx) => (
+                <Fragment key={entry.id}>
+                  <tr className={`${expanded.has(entry.id) ? 'row-expanded' : ''} ${entry.status === 'Dismissed' ? 'row-dismissed' : ''}`}>
+                    <td className="cell-controls">
                       <button className="btn-expand" onClick={() => toggleExpand(entry.id)} title="Show details">
                         {expanded.has(entry.id) ? '▼' : '▶'}
                       </button>
+                      {canReorder && (
+                        <span className="reorder-btns">
+                          <button
+                            className="btn-reorder"
+                            onClick={() => moveEntry(idx, -1)}
+                            disabled={idx === 0}
+                            title="Move up"
+                          >▲</button>
+                          <button
+                            className="btn-reorder"
+                            onClick={() => moveEntry(idx, 1)}
+                            disabled={idx === visible.length - 1}
+                            title="Move down"
+                          >▼</button>
+                        </span>
+                      )}
                     </td>
                     <td>
                       {entry.url
@@ -287,9 +363,9 @@ export default function TrackerPage() {
                     </td>
                   </tr>
                   {expanded.has(entry.id) && (
-                    <DetailPanel key={`detail-${entry.id}`} entry={entry} onUpdate={handleUpdate} />
+                    <DetailPanel entry={entry} onUpdate={handleUpdate} />
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

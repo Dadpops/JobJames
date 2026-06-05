@@ -5,8 +5,10 @@ from datetime import date
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from app.database import (
+    bulk_reorder_tracker,
     create_tracker_entry,
     delete_tracker_entry,
     get_tracker_entries,
@@ -23,6 +25,17 @@ _EMPTY_ENTRY = dict(
     salary_min=None, salary_max=None, company_size=None,
     company_industry=None, company_notes=None,
 )
+
+
+class _ReorderItem(BaseModel):
+    id: str
+    sort_order: int
+
+
+@router.patch("/reorder", status_code=200)
+async def reorder_tracker(body: list[_ReorderItem]):
+    await bulk_reorder_tracker([i.model_dump() for i in body])
+    return {}
 
 
 @router.get("", response_model=list[TrackerEntry])
