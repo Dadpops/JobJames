@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, HTTPException
 
 from app.crawlers import run_crawlers
@@ -11,6 +13,7 @@ router = APIRouter()
 
 
 def _to_row(job: JobListing) -> dict:
+    sources = job.sources if job.sources else [job.source.value]
     return {
         "id": job.id,
         "title": job.title,
@@ -25,11 +28,17 @@ def _to_row(job: JobListing) -> dict:
         "posted_at": job.posted_at,
         "score": job.score,
         "status": job.status.value,
+        "sources": json.dumps(sources),
+        "score_breakdown": json.dumps(job.score_breakdown),
     }
 
 
 def _from_row(row: dict) -> JobListing:
-    return JobListing(**{**row, "remote": bool(row["remote"])})
+    row = dict(row)
+    row["remote"] = bool(row["remote"])
+    row["sources"] = json.loads(row.get("sources") or "[]") or [row["source"]]
+    row["score_breakdown"] = json.loads(row.get("score_breakdown") or "{}")
+    return JobListing(**row)
 
 
 @router.post("/search", response_model=list[JobListing])

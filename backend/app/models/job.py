@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 
 class JobStatus(str, Enum):
@@ -33,6 +33,8 @@ class JobListing(BaseModel):
     posted_at: Optional[str] = None
     score: float = 0.0
     status: JobStatus = JobStatus.new
+    sources: list[str] = []
+    score_breakdown: dict = {}
 
 
 class StatusUpdate(BaseModel):
