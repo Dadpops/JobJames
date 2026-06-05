@@ -92,9 +92,19 @@
   transition: all 0.15s;
 }
 
-.btn-save:hover:not(:disabled) {
+.btn-save:hover {
   border-color: var(--green);
   color: var(--green);
+}
+
+.btn-unsave {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btn-unsave:hover {
+  border-color: var(--text-muted);
+  color: var(--text-muted);
 }
 
 .btn-dismiss:hover:not(:disabled) {

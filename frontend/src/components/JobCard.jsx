@@ -36,11 +36,10 @@ export default function JobCard({ job, onStatusChange }) {
 
       <div className="job-actions">
         <button
-          className="btn-action btn-save"
-          disabled={job.status === 'saved'}
-          onClick={() => onStatusChange(job.id, 'saved')}
+          className={`btn-action ${job.status === 'saved' ? 'btn-unsave' : 'btn-save'}`}
+          onClick={() => onStatusChange(job.id, job.status === 'saved' ? 'new' : 'saved')}
         >
-          Save
+          {job.status === 'saved' ? 'Unsave' : 'Save'}
         </button>
         <button
           className="btn-action btn-dismiss"
