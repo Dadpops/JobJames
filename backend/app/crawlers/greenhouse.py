@@ -1,10 +1,15 @@
 import hashlib
 
 import httpx
+from bs4 import BeautifulSoup
 
 from app.crawlers.base import BaseCrawler
 from app.models.job import JobListing, JobSource
 from app.models.search import SearchRequest
+
+
+def _strip_html(html: str) -> str:
+    return BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
 
 # Greenhouse exposes a public JSON board API at:
 # https://boards-api.greenhouse.io/v1/boards/{company_token}/jobs?content=true
@@ -37,7 +42,7 @@ class GreenhouseCrawler(BaseCrawler):
                                 location=item.get("location", {}).get("name"),
                                 url=item.get("absolute_url", ""),
                                 source=JobSource.greenhouse,
-                                description_snippet=item.get("content", "")[:200],
+                                description_snippet=_strip_html(item.get("content", ""))[:200],
                             )
                         )
                 except Exception as exc:
