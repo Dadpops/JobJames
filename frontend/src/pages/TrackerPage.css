@@ -1,0 +1,309 @@
+.tracker-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tracker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tracker-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tracker-empty {
+  color: var(--text-muted);
+  padding: 3rem 0;
+  text-align: center;
+  line-height: 2;
+}
+
+/* ── Table ─────────────────────────────────────────────────── */
+
+.tracker-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.tracker-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tracker-table th {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.tracker-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.tracker-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tracker-table tbody tr:hover {
+  background: rgba(255,255,255,0.025);
+}
+
+.tracker-link {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.tracker-link:hover {
+  color: var(--accent);
+}
+
+.date-cell {
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.notes-cell {
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.location-cell {
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.cell-muted {
+  opacity: 0.35;
+}
+
+/* ── Inline editing ─────────────────────────────────────────── */
+
+.inline-text {
+  cursor: pointer;
+  color: var(--text-muted);
+  display: block;
+  min-width: 2rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.inline-text:hover {
+  color: var(--text);
+}
+
+.placeholder {
+  opacity: 0.4;
+  font-style: italic;
+}
+
+.inline-input {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+}
+
+/* ── Overdue indicator ──────────────────────────────────────── */
+
+.overdue {
+  color: var(--red) !important;
+}
+
+.overdue-dot {
+  font-size: 0.55rem;
+  vertical-align: middle;
+  margin-right: 4px;
+  color: var(--red);
+}
+
+/* ── Status select/badge ────────────────────────────────────── */
+
+.status-select {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.status-found {
+  background: rgba(108, 142, 247, 0.15);
+  color: var(--accent);
+}
+
+.status-reviewing {
+  background: rgba(232, 184, 75, 0.15);
+  color: var(--yellow);
+}
+
+.status-applied {
+  background: rgba(76, 175, 130, 0.15);
+  color: var(--green);
+}
+
+.status-interviewing {
+  background: rgba(150, 100, 247, 0.15);
+  color: #b48ef7;
+}
+
+.status-offer {
+  background: rgba(76, 175, 130, 0.25);
+  color: var(--green);
+}
+
+.status-rejected {
+  background: rgba(224, 92, 106, 0.15);
+  color: var(--red);
+}
+
+/* ── Delete button ──────────────────────────────────────────── */
+
+.btn-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.btn-delete:hover {
+  color: var(--red);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+
+.btn-primary {
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+
+.btn-secondary:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+/* ── Add modal ──────────────────────────────────────────────── */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal-form input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.modal-form input:focus {
+  border-color: var(--accent);
+}
+
+.modal-error {
+  color: var(--red);
+  font-size: 0.82rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}

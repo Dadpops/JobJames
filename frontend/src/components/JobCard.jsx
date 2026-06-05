@@ -1,7 +1,25 @@
+import { useState } from 'react'
 import StatusBadge from './StatusBadge'
+import { addJobToTracker } from '../api/client'
 import './JobCard.css'
 
 export default function JobCard({ job, onStatusChange }) {
+  const [tracked, setTracked] = useState(false)
+  const [tracking, setTracking] = useState(false)
+
+  async function handleTrack() {
+    setTracking(true)
+    try {
+      await addJobToTracker(job.id)
+      setTracked(true)
+    } catch {
+      // silently fail — job may already be in tracker
+      setTracked(true)
+    } finally {
+      setTracking(false)
+    }
+  }
+
   return (
     <article className="job-card">
       <div className="job-card-top">
@@ -47,6 +65,13 @@ export default function JobCard({ job, onStatusChange }) {
           onClick={() => onStatusChange(job.id, 'dismissed')}
         >
           Dismiss
+        </button>
+        <button
+          className={`btn-action btn-track ${tracked ? 'btn-tracked' : ''}`}
+          disabled={tracked || tracking}
+          onClick={handleTrack}
+        >
+          {tracked ? 'In Tracker' : 'Save to Tracker'}
         </button>
       </div>
     </article>

@@ -1,6 +1,7 @@
 import { NavLink, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import SavedPage from './pages/SavedPage'
+import TrackerPage from './pages/TrackerPage'
 import './App.css'
 
 export default function App() {
@@ -15,12 +16,16 @@ export default function App() {
           <NavLink to="/saved" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
             Saved
           </NavLink>
+          <NavLink to="/tracker" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+            Tracker
+          </NavLink>
         </nav>
       </header>
       <main className="app-main">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/saved" element={<SavedPage />} />
+          <Route path="/tracker" element={<TrackerPage />} />
         </Routes>
       </main>
     </div>
