@@ -170,7 +170,7 @@ async def get_tracker_entries() -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
-            "SELECT * FROM tracker ORDER BY COALESCE(sort_order, 999999) ASC, date_added DESC"
+            "SELECT * FROM tracker ORDER BY COALESCE(sort_order, 999999) ASC, date_added ASC"
         ) as cur:
             return [_parse_tracker_row(dict(r)) for r in await cur.fetchall()]
 
