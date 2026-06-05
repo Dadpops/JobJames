@@ -212,6 +212,33 @@
 .search-criteria { color: var(--text-muted); font-size: 0.8rem; }
 .search-last-run { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
 
+.search-email-cell { min-width: 160px; }
+.search-limit-cell { width: 60px; text-align: center; }
+
+.search-inline {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  display: block;
+}
+.search-inline:hover { color: var(--text); }
+
+.search-placeholder { opacity: 0.4; font-style: italic; }
+
+.search-inline-input {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+}
+
+.search-limit-input { width: 52px; text-align: center; }
+
 .schedule-select {
   background: var(--bg);
   border: 1px solid var(--border);

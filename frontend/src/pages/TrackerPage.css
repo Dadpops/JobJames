@@ -207,7 +207,20 @@
   color: var(--red);
 }
 
-/* ── Expand button ───────────────────────────────────────────── */
+.status-dismissed {
+  background: rgba(122, 126, 154, 0.12);
+  color: var(--text-muted);
+}
+
+/* ── Expand + reorder controls ───────────────────────────────── */
+
+.col-controls { width: 56px; }
+
+.cell-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 .btn-expand {
   background: transparent;
@@ -221,12 +234,49 @@
 
 .btn-expand:hover { color: var(--accent); }
 
+.reorder-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.btn-reorder {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.55rem;
+  padding: 0 3px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: color 0.15s;
+}
+
+.btn-reorder:hover:not(:disabled) { color: var(--accent); }
+.btn-reorder:disabled { opacity: 0.2; cursor: default; }
+
 .row-expanded td { background: rgba(108, 142, 247, 0.04); }
+
+.row-dismissed td { opacity: 0.55; }
 
 .tracker-location {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+/* ── Filters ─────────────────────────────────────────────────── */
+
+.tracker-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.status-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* ── Tag system ──────────────────────────────────────────────── */

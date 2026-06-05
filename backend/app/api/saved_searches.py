@@ -31,6 +31,8 @@ async def create_search(body: SavedSearchCreate):
         "schedule": body.schedule,
         "is_enabled": 1,
         "created_at": datetime.now().isoformat(),
+        "recipient_email": body.recipient_email,
+        "result_limit": body.result_limit,
     }
     created = await create_saved_search(row)
     sched.reschedule_search(created)

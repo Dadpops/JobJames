@@ -76,13 +76,8 @@ export default function SettingsPage() {
     setTimeout(() => setTestState('idle'), 3000)
   }
 
-  async function handleSearchSchedule(id, schedule) {
-    const updated = await updateSavedSearch(id, { schedule })
-    setSearches(ss => ss.map(s => s.id === id ? updated : s))
-  }
-
-  async function handleSearchToggle(id, enabled) {
-    const updated = await updateSavedSearch(id, { is_enabled: enabled })
+  async function handleSearchUpdate(id, fields) {
+    const updated = await updateSavedSearch(id, fields)
     setSearches(ss => ss.map(s => s.id === id ? updated : s))
   }
 
@@ -95,6 +90,52 @@ export default function SettingsPage() {
   async function handleDeleteSearch(id) {
     await deleteSavedSearch(id)
     setSearches(ss => ss.filter(s => s.id !== id))
+  }
+
+  function SearchEmailCell({ search }) {
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState(search.recipient_email || '')
+    function commit() {
+      setEditing(false)
+      const val = draft.trim() || null
+      if (val !== (search.recipient_email || null)) handleSearchUpdate(search.id, { recipient_email: val })
+    }
+    if (!editing) return (
+      <span className="search-inline" onClick={() => { setDraft(search.recipient_email || ''); setEditing(true) }} title="Click to set email">
+        {search.recipient_email || <span className="search-placeholder">—</span>}
+      </span>
+    )
+    return (
+      <input
+        autoFocus type="email" className="search-inline-input"
+        value={draft} onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+      />
+    )
+  }
+
+  function SearchLimitCell({ search }) {
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState(search.result_limit ?? 10)
+    function commit() {
+      setEditing(false)
+      const val = parseInt(draft, 10) || 10
+      if (val !== search.result_limit) handleSearchUpdate(search.id, { result_limit: val })
+    }
+    if (!editing) return (
+      <span className="search-inline" onClick={() => { setDraft(search.result_limit ?? 10); setEditing(true) }} title="Click to edit">
+        {search.result_limit ?? 10}
+      </span>
+    )
+    return (
+      <input
+        autoFocus type="number" min="1" max="50" className="search-inline-input search-limit-input"
+        value={draft} onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+      />
+    )
   }
 
   if (loading) return <p className="settings-status">Loading…</p>
@@ -189,8 +230,10 @@ export default function SettingsPage() {
                   <th>Name</th>
                   <th>Criteria</th>
                   <th>Schedule</th>
+                  <th>Email results to</th>
+                  <th>Limit</th>
                   <th>Last run</th>
-                  <th>Enabled</th>
+                  <th>On</th>
                   <th></th>
                 </tr>
               </thead>
@@ -205,17 +248,19 @@ export default function SettingsPage() {
                         <select
                           className="schedule-select"
                           value={s.schedule}
-                          onChange={e => handleSearchSchedule(s.id, e.target.value)}
+                          onChange={e => handleSearchUpdate(s.id, { schedule: e.target.value })}
                         >
                           {SCHEDULES.map(v => <option key={v} value={v}>{SCHEDULE_LABELS[v]}</option>)}
                         </select>
                       </td>
+                      <td className="search-email-cell"><SearchEmailCell search={s} /></td>
+                      <td className="search-limit-cell"><SearchLimitCell search={s} /></td>
                       <td className="search-last-run">{s.last_run ? s.last_run.slice(0, 16) : '—'}</td>
                       <td>
                         <input
                           type="checkbox"
                           checked={s.is_enabled}
-                          onChange={e => handleSearchToggle(s.id, e.target.checked)}
+                          onChange={e => handleSearchUpdate(s.id, { is_enabled: e.target.checked })}
                           className="search-toggle"
                         />
                       </td>

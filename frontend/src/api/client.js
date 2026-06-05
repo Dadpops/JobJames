@@ -147,3 +147,12 @@ export async function deleteTrackerEntry(entryId) {
   const res = await fetch(`${BASE}/tracker/${entryId}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`Failed to delete tracker entry: ${res.status}`)
 }
+
+export async function reorderTrackerEntries(items) {
+  const res = await fetch(`${BASE}/tracker/reorder`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(items),
+  })
+  if (!res.ok) throw new Error(`Failed to reorder tracker: ${res.status}`)
+}
