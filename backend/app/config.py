@@ -8,5 +8,11 @@ class Settings(BaseSettings):
     linkedin_email: str = ""
     linkedin_password: str = ""
 
+    # Email (SMTP) — required for the /api/email endpoint
+    email_smtp_host: str = "smtp.gmail.com"
+    email_smtp_port: int = 587
+    email_smtp_user: str = ""
+    email_smtp_password: str = ""
+
 
 settings = Settings()

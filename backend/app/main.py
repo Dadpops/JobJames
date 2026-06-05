@@ -1,10 +1,20 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router
 from app.config import settings
+from app.database import init_db
 
-app = FastAPI(title="JobJames API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+
+
+app = FastAPI(title="JobJames API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

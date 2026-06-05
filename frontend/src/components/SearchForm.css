@@ -12,14 +12,18 @@
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  align-items: flex-end;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 140px;
+}
+
+.field-grow {
   flex: 1;
-  min-width: 160px;
 }
 
 .field label {
@@ -30,25 +34,34 @@
 }
 
 .field input[type='text'],
-.field input[type='number'] {
+.field input[type='number'],
+.field select {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   color: var(--text);
   font-size: 0.9rem;
+  font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
 }
 
-.field input:focus {
+.field input:focus,
+.field select:focus {
   border-color: var(--accent);
+}
+
+.field select option {
+  background: var(--surface);
 }
 
 .field-inline {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
+  flex: 0;
+  white-space: nowrap;
 }
 
 .field-inline input[type='checkbox'] {
@@ -64,6 +77,82 @@
   color: var(--text);
 }
 
+/* Advanced toggle */
+.btn-toggle-advanced {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.15s;
+}
+
+.btn-toggle-advanced:hover {
+  color: var(--text);
+}
+
+.toggle-arrow {
+  font-size: 0.65rem;
+}
+
+/* Advanced section */
+.advanced-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.source-checkboxes {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.source-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.source-check input[type='checkbox'] {
+  accent-color: var(--accent);
+}
+
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-row .field {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Submit */
 .btn-search {
   align-self: flex-end;
   background: var(--accent);

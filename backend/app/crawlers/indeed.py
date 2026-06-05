@@ -118,6 +118,15 @@ class IndeedCrawler(BaseCrawler):
                     params["l"] = req.location
                 if req.remote:
                     params["remotejob"] = _REMOTE_GUID
+                # Date posted: fromage = days ago
+                _date_map = {"day": 1, "week": 7, "month": 30}
+                if req.date_posted.value in _date_map:
+                    params["fromage"] = _date_map[req.date_posted.value]
+                # Job type
+                _jt_map = {"fulltime": "fulltime", "parttime": "parttime",
+                           "contract": "contract", "internship": "internship"}
+                if req.job_type.value in _jt_map:
+                    params["jt"] = _jt_map[req.job_type.value]
 
                 url = f"https://www.indeed.com/jobs?{urlencode(params)}"
                 try:

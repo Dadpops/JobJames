@@ -1,0 +1,105 @@
+import { useState, useEffect } from 'react'
+import JobCard from '../components/JobCard'
+import { getSavedJobs, updateJobStatus, emailSavedJobs } from '../api/client'
+import './SavedPage.css'
+
+export default function SavedPage() {
+  const [jobs, setJobs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const [emailTo, setEmailTo] = useState('')
+  const [emailState, setEmailState] = useState('idle') // idle | sending | sent | error
+  const [emailError, setEmailError] = useState('')
+
+  useEffect(() => {
+    getSavedJobs()
+      .then(setJobs)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleStatusChange(jobId, status) {
+    try {
+      const updated = await updateJobStatus(jobId, status)
+      if (status === 'dismissed') {
+        setJobs(prev => prev.filter(j => j.id !== jobId))
+      } else {
+        setJobs(prev => prev.map(j => j.id === updated.id ? updated : j))
+      }
+    } catch (e) {
+      console.error('Status update failed', e)
+    }
+  }
+
+  async function handleEmail(e) {
+    e.preventDefault()
+    setEmailState('sending')
+    setEmailError('')
+    try {
+      await emailSavedJobs(emailTo)
+      setEmailState('sent')
+    } catch (err) {
+      setEmailError(err.message)
+      setEmailState('error')
+    }
+  }
+
+  return (
+    <div className="saved-page">
+      <div className="saved-header">
+        <div>
+          <h2 className="saved-title">Saved Jobs</h2>
+          {!loading && (
+            <p className="saved-subtitle">
+              {jobs.length} saved listing{jobs.length !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+
+        {/* Email panel */}
+        <form className="email-panel" onSubmit={handleEmail}>
+          <input
+            type="email"
+            className="email-input"
+            placeholder="your@email.com"
+            value={emailTo}
+            onChange={e => { setEmailTo(e.target.value); setEmailState('idle') }}
+            required
+          />
+          <button
+            type="submit"
+            className="btn-email"
+            disabled={emailState === 'sending' || jobs.length === 0}
+          >
+            {emailState === 'sending' ? 'Sending…' : emailState === 'sent' ? 'Sent!' : 'Email all saved'}
+          </button>
+          {emailState === 'error' && (
+            <span className="email-error">{emailError}</span>
+          )}
+          {emailState === 'sent' && (
+            <span className="email-success">Email sent to {emailTo}</span>
+          )}
+        </form>
+      </div>
+
+      {loading && <p className="saved-status">Loading…</p>}
+      {error && <p className="saved-status saved-status--error">{error}</p>}
+
+      {!loading && jobs.length === 0 && !error && (
+        <div className="saved-empty">
+          <p>No saved jobs yet.</p>
+          <p>Search for jobs and click <strong>Save</strong> on any listing.</p>
+        </div>
+      )}
+
+      {jobs.length > 0 && (
+        <div className="job-list">
+          {jobs.map(job => (
+            <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
