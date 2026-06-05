@@ -127,3 +127,65 @@
   color: var(--accent);
   opacity: 0.6;
 }
+
+.btn-email:hover {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+/* ── Email popover ── */
+.email-popover {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+}
+
+.email-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 4px 10px;
+  outline: none;
+  flex: 1;
+  min-width: 180px;
+  transition: border-color 0.15s;
+}
+
+.email-input:focus {
+  border-color: var(--accent);
+}
+
+.btn-email-send {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-email-send:hover:not(:disabled) {
+  background: rgba(108,142,247,0.12);
+}
+
+.btn-email-cancel {
+  font-size: 0.72rem;
+}
+
+.btn-email-cancel:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.email-sent {
+  font-size: 0.82rem;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.email-error {
+  font-size: 0.78rem;
+  color: var(--red);
+  width: 100%;
+}
