@@ -116,3 +116,14 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.btn-track:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-tracked {
+  border-color: var(--accent);
+  color: var(--accent);
+  opacity: 0.6;
+}

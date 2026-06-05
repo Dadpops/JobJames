@@ -20,6 +20,18 @@ CREATE TABLE IF NOT EXISTS jobs (
     status              TEXT NOT NULL DEFAULT 'new',
     updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS tracker (
+    id            TEXT PRIMARY KEY,
+    title         TEXT NOT NULL,
+    company       TEXT NOT NULL,
+    location      TEXT,
+    url           TEXT,
+    status        TEXT NOT NULL DEFAULT 'Found',
+    date_added    TEXT NOT NULL DEFAULT (date('now')),
+    followup_date TEXT,
+    notes         TEXT
+);
 """
 
 
@@ -73,3 +85,56 @@ async def get_saved_jobs() -> list[dict]:
             "SELECT * FROM jobs WHERE status = 'saved' ORDER BY score DESC, updated_at DESC"
         ) as cur:
             return [dict(r) for r in await cur.fetchall()]
+
+
+# ── Tracker CRUD ──────────────────────────────────────────────────────────────
+
+async def get_tracker_entries() -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM tracker ORDER BY date_added DESC"
+        ) as cur:
+            return [dict(r) for r in await cur.fetchall()]
+
+
+async def create_tracker_entry(entry: dict) -> dict:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO tracker (id, title, company, location, url, status, date_added, followup_date, notes)
+               VALUES (:id, :title, :company, :location, :url, :status, :date_added, :followup_date, :notes)""",
+            entry,
+        )
+        await db.commit()
+    return entry
+
+
+async def update_tracker_entry(entry_id: str, fields: dict) -> dict | None:
+    if not fields:
+        return await get_tracker_entry(entry_id)
+    set_clause = ", ".join(f"{k} = :{k}" for k in fields)
+    fields["entry_id"] = entry_id
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            f"UPDATE tracker SET {set_clause} WHERE id = :entry_id",
+            fields,
+        )
+        await db.commit()
+    return await get_tracker_entry(entry_id)
+
+
+async def get_tracker_entry(entry_id: str) -> dict | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM tracker WHERE id = ?", (entry_id,)
+        ) as cur:
+            row = await cur.fetchone()
+            return dict(row) if row else None
+
+
+async def delete_tracker_entry(entry_id: str) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur = await db.execute("DELETE FROM tracker WHERE id = ?", (entry_id,))
+        await db.commit()
+        return cur.rowcount > 0
