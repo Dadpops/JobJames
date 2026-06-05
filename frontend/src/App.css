@@ -7,6 +7,7 @@
 .app-header {
   display: flex;
   align-items: center;
+  gap: 2rem;
   padding: 0 2rem;
   height: 56px;
   background: var(--surface);
@@ -18,6 +19,30 @@
   font-weight: 700;
   color: var(--accent);
   letter-spacing: -0.02em;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  padding: 0.3rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+}
+
+.nav-link.active {
+  color: var(--accent);
+  background: rgba(108, 142, 247, 0.12);
 }
 
 .app-main {

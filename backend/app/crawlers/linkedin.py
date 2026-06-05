@@ -91,7 +91,16 @@ class LinkedInCrawler(BaseCrawler):
                 if req.location:
                     params["location"] = req.location
                 if req.remote:
-                    params["f_WT"] = 2  # LinkedIn's "remote" work-type filter
+                    params["f_WT"] = 2
+                # Date posted: f_TPR in seconds
+                _tpr_map = {"day": "r86400", "week": "r604800", "month": "r2592000"}
+                if req.date_posted.value in _tpr_map:
+                    params["f_TPR"] = _tpr_map[req.date_posted.value]
+                # Job type: f_JT
+                _jt_map = {"fulltime": "F", "parttime": "P",
+                           "contract": "C", "internship": "I"}
+                if req.job_type.value in _jt_map:
+                    params["f_JT"] = _jt_map[req.job_type.value]
 
                 try:
                     resp = await session.get(
