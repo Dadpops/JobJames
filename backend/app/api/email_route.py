@@ -1,8 +1,4 @@
-import smtplib
-import ssl
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 
@@ -10,6 +6,8 @@ from app.config import settings
 from app.database import get_saved_jobs
 
 router = APIRouter()
+
+RESEND_URL = "https://api.resend.com/emails"
 
 
 class EmailRequest(BaseModel):
@@ -60,35 +58,31 @@ def _build_html(jobs: list[dict]) -> str:
 
 @router.post("/email")
 async def email_saved_jobs(req: EmailRequest):
-    if not settings.email_smtp_user or not settings.email_smtp_password:
+    if not settings.resend_api_key:
         raise HTTPException(
             status_code=503,
-            detail="Email not configured — set EMAIL_SMTP_USER and EMAIL_SMTP_PASSWORD in .env",
+            detail="Email not configured — set RESEND_API_KEY in .env",
         )
 
     jobs = await get_saved_jobs()
     if not jobs:
         raise HTTPException(status_code=400, detail="No saved jobs to send")
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"JobJames — {len(jobs)} saved listing{'s' if len(jobs) != 1 else ''}"
-    msg["From"] = settings.email_smtp_user
-    msg["To"] = req.to
+    payload = {
+        "from": settings.email_from,
+        "to": [req.to],
+        "subject": f"JobJames — {len(jobs)} saved listing{'s' if len(jobs) != 1 else ''}",
+        "html": _build_html(jobs),
+    }
 
-    plain = "\n".join(
-        f"{j['title']} @ {j['company']} — {j['url']}" for j in jobs
-    )
-    msg.attach(MIMEText(plain, "plain"))
-    msg.attach(MIMEText(_build_html(jobs), "html"))
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            RESEND_URL,
+            json=payload,
+            headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+        )
 
-    try:
-        ctx = ssl.create_default_context()
-        with smtplib.SMTP(settings.email_smtp_host, settings.email_smtp_port) as smtp:
-            smtp.ehlo()
-            smtp.starttls(context=ctx)
-            smtp.login(settings.email_smtp_user, settings.email_smtp_password)
-            smtp.sendmail(settings.email_smtp_user, req.to, msg.as_string())
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"SMTP error: {exc}")
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=502, detail=f"Resend error: {resp.text}")
 
     return {"sent": len(jobs), "to": req.to}
