@@ -1,7 +1,28 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './SearchForm.css'
 
 const SOURCES = ['indeed', 'greenhouse', 'lever', 'linkedin']
+
+const JOB_ROLES = [
+  'Software Engineer', 'Senior Software Engineer', 'Staff Software Engineer',
+  'Frontend Engineer', 'Backend Engineer', 'Full Stack Engineer',
+  'iOS Engineer', 'Android Engineer', 'Mobile Engineer',
+  'DevOps Engineer', 'Site Reliability Engineer', 'Platform Engineer',
+  'Data Engineer', 'ML Engineer', 'Machine Learning Engineer',
+  'AI Engineer', 'Embedded Engineer', 'Security Engineer',
+  'Cloud Engineer', 'Infrastructure Engineer', 'QA Engineer',
+  'Engineering Manager', 'Director of Engineering', 'VP of Engineering', 'CTO',
+  'Product Manager', 'Senior Product Manager', 'Director of Product',
+  'Technical Program Manager', 'Program Manager', 'Project Manager',
+  'UX Designer', 'UI Designer', 'Product Designer', 'UX Researcher',
+  'Data Scientist', 'Senior Data Scientist', 'Data Analyst', 'Business Analyst',
+  'Analytics Engineer', 'Quantitative Analyst',
+  'Solutions Engineer', 'Sales Engineer', 'Customer Success Manager',
+  'Account Executive', 'Sales Manager', 'Account Manager',
+  'Marketing Manager', 'Growth Manager', 'Content Marketing Manager',
+  'Recruiter', 'Technical Recruiter', 'HR Manager',
+  'Operations Manager', 'Chief of Staff', 'CFO', 'Financial Analyst',
+]
 
 const DEFAULT = {
   title: '',
@@ -18,9 +39,58 @@ const DEFAULT = {
 export default function SearchForm({ onSearch, loading }) {
   const [form, setForm] = useState(DEFAULT)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [suggestions, setSuggestions] = useState([])
+  const [activeSuggestion, setActiveSuggestion] = useState(-1)
+  const titleWrapRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (titleWrapRef.current && !titleWrapRef.current.contains(e.target)) {
+        setSuggestions([])
+        setActiveSuggestion(-1)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function handleTitleChange(value) {
+    set('title', value)
+    if (value.trim().length < 1) {
+      setSuggestions([])
+      return
+    }
+    const q = value.toLowerCase()
+    const matches = JOB_ROLES.filter(r => r.toLowerCase().includes(q)).slice(0, 8)
+    setSuggestions(matches)
+    setActiveSuggestion(-1)
+  }
+
+  function pickSuggestion(role) {
+    set('title', role)
+    setSuggestions([])
+    setActiveSuggestion(-1)
+  }
+
+  function handleTitleKeyDown(e) {
+    if (!suggestions.length) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveSuggestion(i => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveSuggestion(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' && activeSuggestion >= 0) {
+      e.preventDefault()
+      pickSuggestion(suggestions[activeSuggestion])
+    } else if (e.key === 'Escape') {
+      setSuggestions([])
+      setActiveSuggestion(-1)
+    }
   }
 
   function toggleSource(src) {
@@ -35,6 +105,7 @@ export default function SearchForm({ onSearch, loading }) {
   function handleSubmit(e) {
     e.preventDefault()
     if (!form.sources.length) return
+    setSuggestions([])
     onSearch({
       title: form.title.trim(),
       location: form.location.trim() || null,
@@ -52,15 +123,30 @@ export default function SearchForm({ onSearch, loading }) {
     <form className="search-form" onSubmit={handleSubmit}>
       {/* Row 1: title + location */}
       <div className="search-row">
-        <div className="field field-grow">
+        <div className="field field-grow" ref={titleWrapRef} style={{ position: 'relative' }}>
           <label>Job title</label>
           <input
             type="text"
             placeholder="e.g. Software Engineer"
             value={form.title}
-            onChange={e => set('title', e.target.value)}
+            onChange={e => handleTitleChange(e.target.value)}
+            onKeyDown={handleTitleKeyDown}
+            autoComplete="off"
             required
           />
+          {suggestions.length > 0 && (
+            <ul className="suggestions-list">
+              {suggestions.map((role, i) => (
+                <li
+                  key={role}
+                  className={`suggestion-item ${i === activeSuggestion ? 'suggestion-active' : ''}`}
+                  onMouseDown={() => pickSuggestion(role)}
+                >
+                  {role}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="field field-grow">
           <label>Location</label>

@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import StatusBadge from './StatusBadge'
-import { addJobToTracker } from '../api/client'
+import { addJobToTracker, emailJob } from '../api/client'
 import './JobCard.css'
 
 export default function JobCard({ job, onStatusChange }) {
   const [tracked, setTracked] = useState(false)
   const [tracking, setTracking] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
+  const [emailAddr, setEmailAddr] = useState('')
+  const [emailState, setEmailState] = useState('idle') // idle | sending | sent | error
+  const [emailError, setEmailError] = useState('')
 
   async function handleTrack() {
     setTracking(true)
@@ -13,10 +17,24 @@ export default function JobCard({ job, onStatusChange }) {
       await addJobToTracker(job.id)
       setTracked(true)
     } catch {
-      // silently fail — job may already be in tracker
       setTracked(true)
     } finally {
       setTracking(false)
+    }
+  }
+
+  async function handleSendEmail(e) {
+    e.preventDefault()
+    if (!emailAddr.trim()) return
+    setEmailState('sending')
+    setEmailError('')
+    try {
+      await emailJob(job.id, emailAddr.trim())
+      setEmailState('sent')
+      setTimeout(() => { setShowEmail(false); setEmailState('idle'); setEmailAddr('') }, 2000)
+    } catch (err) {
+      setEmailState('error')
+      setEmailError(err.message)
     }
   }
 
@@ -73,7 +91,40 @@ export default function JobCard({ job, onStatusChange }) {
         >
           {tracked ? 'In Tracker' : 'Save to Tracker'}
         </button>
+        <button
+          className="btn-action btn-email"
+          onClick={() => { setShowEmail(v => !v); setEmailState('idle'); setEmailError('') }}
+        >
+          Email
+        </button>
       </div>
+
+      {showEmail && (
+        <form className="email-popover" onSubmit={handleSendEmail}>
+          {emailState === 'sent' ? (
+            <span className="email-sent">Sent!</span>
+          ) : (
+            <>
+              <input
+                type="email"
+                className="email-input"
+                placeholder="you@example.com"
+                value={emailAddr}
+                onChange={e => setEmailAddr(e.target.value)}
+                autoFocus
+                required
+              />
+              <button type="submit" className="btn-action btn-email-send" disabled={emailState === 'sending'}>
+                {emailState === 'sending' ? 'Sending…' : 'Send'}
+              </button>
+              <button type="button" className="btn-action btn-email-cancel" onClick={() => setShowEmail(false)}>
+                ✕
+              </button>
+            </>
+          )}
+          {emailState === 'error' && <span className="email-error">{emailError}</span>}
+        </form>
+      )}
     </article>
   )
 }

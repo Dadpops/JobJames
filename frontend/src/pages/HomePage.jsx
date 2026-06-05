@@ -48,11 +48,18 @@ export default function HomePage() {
 
       {error && <p className="home-error">{error}</p>}
 
+      {loading && (
+        <div className="search-loading">
+          <span className="spinner" />
+          <span>Searching across job boards…</span>
+        </div>
+      )}
+
       {searched && !loading && jobs.length === 0 && (
         <p className="home-empty">No results found. Try broadening your search.</p>
       )}
 
-      {jobs.length > 0 && (
+      {!loading && jobs.length > 0 && (
         <div className="results">
           <p className="results-count">{jobs.length} result{jobs.length !== 1 ? 's' : ''}</p>
           <div className="job-list">
