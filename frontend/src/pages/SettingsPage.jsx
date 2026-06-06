@@ -28,12 +28,15 @@ function Field({ label, hint, children }) {
 }
 
 export default function SettingsPage() {
-  const [cfg, setCfg] = useState({})
+  const [cfg, setCfg]           = useState({})
   const [searches, setSearches] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [loading, setLoading]   = useState(true)
+  const [saving, setSaving]     = useState(false)
+  const [saved, setSaved]       = useState(false)
   const [testState, setTestState] = useState('idle')
+  const [displayName, setDisplayName] = useState(() => localStorage.getItem('jobjames_display_name') || '')
+  const [nameDraft, setNameDraft]     = useState('')
+  const [editingName, setEditingName] = useState(false)
 
   useEffect(() => {
     Promise.all([getSettings(), getSavedSearches()])
@@ -43,6 +46,19 @@ export default function SettingsPage() {
 
   function set(key, value) {
     setCfg(c => ({ ...c, [key]: value }))
+  }
+
+  function startEditName() {
+    setNameDraft(displayName)
+    setEditingName(true)
+  }
+
+  function commitName() {
+    const val = nameDraft.trim()
+    setDisplayName(val)
+    localStorage.setItem('jobjames_display_name', val)
+    window.dispatchEvent(new CustomEvent('jobjames:name-changed', { detail: val }))
+    setEditingName(false)
   }
 
   async function handleSave(e) {
@@ -145,12 +161,38 @@ export default function SettingsPage() {
       <div className="settings-header">
         <h1 className="settings-title">Settings</h1>
         <div className="settings-save-row">
-          {saved && <span className="settings-saved">Saved!</span>}
+          {saved && <span className="settings-saved">Saved</span>}
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save Settings'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>
+
+      {/* ── Profile ── */}
+      <Section title="Profile">
+        <div className="settings-grid">
+          <Field label="Display name">
+            {editingName ? (
+              <div className="name-edit-row">
+                <input
+                  autoFocus
+                  type="text"
+                  value={nameDraft}
+                  onChange={e => setNameDraft(e.target.value)}
+                  onBlur={commitName}
+                  onKeyDown={e => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false) }}
+                  placeholder="Your name"
+                />
+              </div>
+            ) : (
+              <div className="name-display-row" onClick={startEditName} title="Click to edit">
+                <span className="name-value">{displayName || <span className="settings-placeholder">Click to set your name</span>}</span>
+                <span className="name-edit-hint">Edit</span>
+              </div>
+            )}
+          </Field>
+        </div>
+      </Section>
 
       {/* ── Email Digest ── */}
       <Section title="Email Digest">
@@ -221,7 +263,7 @@ export default function SettingsPage() {
           Searches saved from the Search page. Set a schedule to run them automatically.
         </p>
         {searches.length === 0 ? (
-          <p className="settings-empty">No saved searches yet. Run a search and click <strong>Save this search</strong>.</p>
+          <p className="settings-empty">No saved searches yet. Run a search and click <strong>Save search</strong>.</p>
         ) : (
           <div className="searches-table-wrap">
             <table className="searches-table">

@@ -147,6 +147,15 @@ async def get_saved_jobs() -> list[dict]:
             return [dict(r) for r in await cur.fetchall()]
 
 
+async def get_dismissed_jobs() -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM jobs WHERE status = 'dismissed' ORDER BY updated_at DESC"
+        ) as cur:
+            return [dict(r) for r in await cur.fetchall()]
+
+
 # ── Tracker ───────────────────────────────────────────────────────────────────
 
 def _parse_tracker_row(row: dict) -> dict:

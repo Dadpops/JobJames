@@ -1,7 +1,7 @@
 .saved-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 16px;
 }
 
 .saved-header {
@@ -9,109 +9,97 @@
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
-  padding-top: 0.5rem;
+  gap: 12px;
+}
+
+.saved-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
 
 .saved-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .saved-subtitle {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-faint);
 }
 
 /* Email panel */
 .email-panel {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .email-input {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
   color: var(--text);
-  font-size: 0.88rem;
+  font-size: 12px;
   font-family: inherit;
   outline: none;
-  width: 220px;
+  width: 200px;
   transition: border-color 0.15s;
 }
 
-.email-input:focus {
-  border-color: var(--accent);
-}
+.email-input:focus { border-color: var(--accent); }
 
 .btn-email {
-  background: var(--surface);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  color: var(--accent);
-  font-size: 0.88rem;
-  font-weight: 600;
+  background: transparent;
+  border: 0.5px solid var(--accent);
+  border-radius: 6px;
+  padding: 5px 12px;
+  color: var(--accent-muted);
+  font-size: 12px;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s;
   white-space: nowrap;
 }
 
 .btn-email:hover:not(:disabled) {
-  background: var(--accent);
-  color: #fff;
+  background: #1a1929;
 }
 
 .btn-email:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.email-error {
-  font-size: 0.8rem;
-  color: var(--red);
-  width: 100%;
-}
-
-.email-success {
-  font-size: 0.8rem;
-  color: var(--green);
-  width: 100%;
-}
+.email-error   { font-size: 11px; color: var(--red); width: 100%; }
+.email-success { font-size: 11px; color: var(--green); width: 100%; }
 
 /* States */
 .saved-status {
   color: var(--text-muted);
+  font-size: 12px;
   text-align: center;
-  padding: 2rem 0;
+  padding: 30px 0;
 }
 
-.saved-status--error {
-  color: var(--red);
-}
+.saved-status--error { color: var(--red); }
 
 .saved-empty {
   text-align: center;
   color: var(--text-muted);
-  padding: 3rem 0;
+  font-size: 12px;
+  padding: 40px 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 6px;
 }
 
-.saved-empty strong {
-  color: var(--text);
-}
+.saved-empty strong { color: var(--text); }
 
 .job-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }

@@ -1,0 +1,43 @@
+.dismissed-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dismissed-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.dismissed-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dismissed-count {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.dismissed-status {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 30px 0;
+}
+
+.dismissed-status--error { color: var(--red); }
+
+.dismissed-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 40px 0;
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+}

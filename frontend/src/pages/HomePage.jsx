@@ -1,29 +1,33 @@
 import { useState } from 'react'
 import SearchForm from '../components/SearchForm'
 import JobCard from '../components/JobCard'
+import StatCards from '../components/StatCards'
 import { searchJobs, updateJobStatus, createSavedSearch } from '../api/client'
 import './HomePage.css'
 
+function isStaleJob(job) {
+  if (!job.posted_at) return false
+  const posted = new Date(job.posted_at)
+  if (isNaN(posted)) return false
+  return (Date.now() - posted.getTime()) > 30 * 86400000
+}
+
 export default function HomePage() {
-  const [jobs, setJobs] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [searched, setSearched] = useState(false)
-  const [lastCriteria, setLastCriteria] = useState(null)
-  const [saveState, setSaveState] = useState('idle') // idle | saving | saved
-  const [showSaveName, setShowSaveName] = useState(false)
-  const [saveName, setSaveName] = useState('')
+  const [jobs, setJobs]           = useState([])
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState(null)
+  const [searched, setSearched]   = useState(false)
+  const [lastCriteria, setLast]   = useState(null)
+  const [hideStale, setHideStale] = useState(false)
 
   async function handleSearch(criteria) {
     setLoading(true)
     setError(null)
-    setSaveState('idle')
-    setShowSaveName(false)
     try {
       const results = await searchJobs(criteria)
       setJobs(results)
       setSearched(true)
-      setLastCriteria(criteria)
+      setLast(criteria)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -31,21 +35,15 @@ export default function HomePage() {
     }
   }
 
-  async function handleSaveSearch(e) {
-    e.preventDefault()
-    if (!saveName.trim() || !lastCriteria) return
-    setSaveState('saving')
+  async function handleSaveSearch({ name, ...criteria }) {
     try {
       await createSavedSearch({
-        name: saveName.trim(),
-        criteria_json: JSON.stringify(lastCriteria),
+        name,
+        criteria_json: JSON.stringify(criteria),
         schedule: 'off',
       })
-      setSaveState('saved')
-      setShowSaveName(false)
-      setSaveName('')
     } catch {
-      setSaveState('idle')
+      // silent — SearchForm manages its own UI
     }
   }
 
@@ -62,14 +60,18 @@ export default function HomePage() {
     }
   }
 
+  const displayJobs = hideStale ? jobs.filter(j => !isStaleJob(j)) : jobs
+
   return (
     <div className="home">
-      <div className="home-hero">
-        <h1>Find your next role</h1>
-        <p>Search across Indeed, Greenhouse, Lever, and LinkedIn in one shot.</p>
-      </div>
-
-      <SearchForm onSearch={handleSearch} loading={loading} />
+      <SearchForm
+        onSearch={handleSearch}
+        loading={loading}
+        resultCount={searched && !loading ? displayJobs.length : null}
+        hideStale={hideStale}
+        onToggleStale={() => setHideStale(v => !v)}
+        onSaveSearch={lastCriteria ? handleSaveSearch : null}
+      />
 
       {error && <p className="home-error">{error}</p>}
 
@@ -86,33 +88,9 @@ export default function HomePage() {
 
       {!loading && jobs.length > 0 && (
         <div className="results">
-          <div className="results-bar">
-            <p className="results-count">{jobs.length} result{jobs.length !== 1 ? 's' : ''}</p>
-            {saveState === 'saved' ? (
-              <span className="save-search-confirm">Search saved! Manage schedules in Settings.</span>
-            ) : showSaveName ? (
-              <form className="save-search-form" onSubmit={handleSaveSearch}>
-                <input
-                  autoFocus
-                  className="save-search-input"
-                  placeholder="Search name…"
-                  value={saveName}
-                  onChange={e => setSaveName(e.target.value)}
-                  required
-                />
-                <button type="submit" className="save-search-btn" disabled={saveState === 'saving'}>
-                  {saveState === 'saving' ? 'Saving…' : 'Save'}
-                </button>
-                <button type="button" className="save-search-cancel" onClick={() => setShowSaveName(false)}>✕</button>
-              </form>
-            ) : (
-              <button className="save-search-btn" onClick={() => setShowSaveName(true)}>
-                Save this search
-              </button>
-            )}
-          </div>
+          <StatCards jobs={jobs} />
           <div className="job-list">
-            {jobs.map(job => (
+            {displayJobs.map(job => (
               <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} />
             ))}
           </div>
