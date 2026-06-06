@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Routes, Route, Link } from 'react-router-dom'
+import { NavLink, Routes, Route, Link, useLocation } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import SavedPage from './pages/SavedPage'
 import DismissedPage from './pages/DismissedPage'
@@ -17,9 +17,48 @@ function GearIcon() {
   )
 }
 
+function SunIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <circle cx="12" cy="12" r="5"/>
+      <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  )
+}
+
+function HamburgerIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <path d="M3 7h18M3 12h18M3 17h18"/>
+    </svg>
+  )
+}
+
 export default function App() {
+  const location = useLocation()
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [displayName, setDisplayName] = useState(() => localStorage.getItem('jobjames_display_name') || '')
+  const [theme, setTheme] = useState(() => {
+    const t = localStorage.getItem('jobjames_theme') || 'dark'
+    document.documentElement.setAttribute('data-theme', t)
+    return t
+  })
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    localStorage.setItem('jobjames_theme', next)
+    document.documentElement.setAttribute('data-theme', next)
+  }
 
   useEffect(() => {
     function onNameChange() {
@@ -29,13 +68,30 @@ export default function App() {
     return () => window.removeEventListener('jobjames:name-changed', onNameChange)
   }, [])
 
+  // Close sidebar on mobile when navigating
+  useEffect(() => {
+    if (window.innerWidth <= 640) setSidebarOpen(false)
+  }, [location.pathname])
+
   return (
     <div className="app">
-      <header className="topbar">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+
+      <header className="topbar" role="banner">
+        <button
+          className="topbar-hamburger"
+          onClick={() => setSidebarOpen(v => !v)}
+          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={sidebarOpen}
+        >
+          <HamburgerIcon />
+        </button>
+
         <span className="topbar-brand">
           JobJames{displayName && <span className="topbar-for"> for {displayName}</span>}
         </span>
-        <nav className="topbar-tabs">
+
+        <nav className="topbar-tabs" aria-label="Main navigation">
           <NavLink to="/" end className={({ isActive }) => 'tab-pill' + (isActive ? ' active' : '')}>
             Search
           </NavLink>
@@ -43,14 +99,32 @@ export default function App() {
             Tracker
           </NavLink>
         </nav>
-        <Link to="/settings" className="topbar-settings-btn" title="Settings">
-          <GearIcon />
-        </Link>
+
+        <div className="topbar-actions">
+          <button
+            className="topbar-theme-btn"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
+          <Link to="/settings" className="topbar-settings-btn" aria-label="Settings" title="Settings">
+            <GearIcon />
+          </Link>
+        </div>
       </header>
 
       <div className="app-body">
+        {sidebarOpen && (
+          <div
+            className="sidebar-backdrop"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
         <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(v => !v)} />
-        <main className="app-main">
+        <main className="app-main" id="main-content">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/saved" element={<SavedPage />} />

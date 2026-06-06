@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom'
 import SearchForm from '../components/SearchForm'
 import JobCard from '../components/JobCard'
 import StatCards from '../components/StatCards'
+import { SkeletonJobList } from '../components/Skeleton'
+import EmptyState, { SearchEmptyIcon, NoResultsIcon } from '../components/EmptyState'
 import { searchJobs, updateJobStatus, createSavedSearch, updateSavedSearch, getTrackerEntries } from '../api/client'
 import './HomePage.css'
 
@@ -155,15 +157,22 @@ export default function HomePage() {
 
       {error && <p className="home-error">{error}</p>}
 
-      {loading && (
-        <div className="search-loading">
-          <span className="spinner" />
-          <span>Searching across job boards…</span>
-        </div>
+      {loading && <SkeletonJobList count={6} />}
+
+      {!loading && searched && jobs.length === 0 && !error && (
+        <EmptyState
+          icon={<NoResultsIcon />}
+          title="No results found"
+          body="Try different keywords, a broader location, or remove some filters."
+        />
       )}
 
-      {searched && !loading && jobs.length === 0 && (
-        <p className="home-empty">No results found. Try broadening your search.</p>
+      {!loading && !searched && (
+        <EmptyState
+          icon={<SearchEmptyIcon />}
+          title="Search for jobs"
+          body="Fill in your criteria above and hit Search to find matching listings."
+        />
       )}
 
       {!loading && jobs.length > 0 && (

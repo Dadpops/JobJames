@@ -4,6 +4,8 @@ import {
   getTrackerEntries, addTrackerEntry, updateTrackerEntry, deleteTrackerEntry,
   reorderTrackerEntries,
 } from '../api/client'
+import { SkeletonTableRows } from '../components/Skeleton'
+import EmptyState, { TrackerEmptyIcon } from '../components/EmptyState'
 import './TrackerPage.css'
 
 const STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected', 'Dismissed']
@@ -239,7 +241,25 @@ export default function TrackerPage() {
     } catch {}
   }
 
-  if (loading) return <p className="tracker-empty">Loading…</p>
+  if (loading) return (
+    <div className="tracker-page">
+      <div className="tracker-header">
+        <h1 className="tracker-title">Application Tracker</h1>
+      </div>
+      <div className="tracker-table-wrap">
+        <table className="tracker-table">
+          <thead>
+            <tr>
+              <th className="col-controls" />
+              <th>Job Title</th><th>Company</th><th>Status</th>
+              <th>Deadline</th><th>Tags</th><th>Follow-up</th><th>Notes</th><th />
+            </tr>
+          </thead>
+          <tbody><SkeletonTableRows count={6} cols={9} /></tbody>
+        </table>
+      </div>
+    </div>
+  )
 
   const activeCount = entries.filter(e => e.status !== 'Dismissed').length
   const dismissedCount = entries.filter(e => e.status === 'Dismissed').length
@@ -292,15 +312,16 @@ export default function TrackerPage() {
       </div>
 
       {visible.length === 0 ? (
-        <div className="tracker-empty">
-          {filterStatus === 'Dismissed'
-            ? <p>No dismissed jobs.</p>
-            : filterTag
-              ? <p>No jobs tagged "{filterTag}".</p>
-              : entries.length === 0
-                ? <><p>No jobs in your tracker yet.</p><p>Use <strong>Save to Tracker</strong> on a search result, or add one manually.</p></>
-                : <p>No jobs match the current filter.</p>}
-        </div>
+        <EmptyState
+          icon={<TrackerEmptyIcon />}
+          title={
+            filterStatus === 'Dismissed' ? 'No dismissed jobs' :
+            filterTag ? `No jobs tagged "${filterTag}"` :
+            entries.length === 0 ? 'No jobs tracked yet' :
+            'No jobs match this filter'
+          }
+          body={entries.length === 0 ? 'Use Save to Tracker on a search result, or click + Add Job to get started.' : undefined}
+        />
       ) : (
         <div className="tracker-table-wrap">
           <table className="tracker-table">

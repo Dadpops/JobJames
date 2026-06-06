@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import JobCard from '../components/JobCard'
+import { SkeletonJobList } from '../components/Skeleton'
+import EmptyState, { SavedEmptyIcon } from '../components/EmptyState'
 import { getSavedJobs, updateJobStatus, emailSavedJobs } from '../api/client'
 import './SavedPage.css'
 
@@ -84,14 +86,15 @@ export default function SavedPage() {
         </form>
       </div>
 
-      {loading && <p className="saved-status">Loading…</p>}
+      {loading && <SkeletonJobList count={4} />}
       {error && <p className="saved-status saved-status--error">{error}</p>}
 
       {!loading && jobs.length === 0 && !error && (
-        <div className="saved-empty">
-          <p>No saved jobs yet.</p>
-          <p>Search for jobs and click <strong>Save</strong> on any listing.</p>
-        </div>
+        <EmptyState
+          icon={<SavedEmptyIcon />}
+          title="No saved jobs yet"
+          body="Search for jobs and star any listing to save it here."
+        />
       )}
 
       {jobs.length > 0 && (

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import JobCard from '../components/JobCard'
+import { SkeletonJobList } from '../components/Skeleton'
+import EmptyState, { DismissedEmptyIcon } from '../components/EmptyState'
 import { getDismissedJobs, updateJobStatus } from '../api/client'
 import './DismissedPage.css'
 
@@ -38,13 +40,15 @@ export default function DismissedPage() {
         )}
       </div>
 
-      {loading && <p className="dismissed-status">Loading…</p>}
+      {loading && <SkeletonJobList count={4} />}
       {error && <p className="dismissed-status dismissed-status--error">{error}</p>}
 
       {!loading && jobs.length === 0 && !error && (
-        <div className="dismissed-empty">
-          <p>No dismissed jobs.</p>
-        </div>
+        <EmptyState
+          icon={<DismissedEmptyIcon />}
+          title="No dismissed jobs"
+          body="Jobs you dismiss will appear here. You can undo any dismissal within 5 seconds."
+        />
       )}
 
       {jobs.length > 0 && (
