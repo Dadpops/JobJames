@@ -23,7 +23,7 @@
 .topbar-brand {
   font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -59,7 +59,7 @@
 
 .tab-pill.active {
   color: var(--text);
-  background: #1a1a1f;
+  background: var(--elevated);
 }
 
 .topbar-settings-btn {
@@ -91,4 +91,60 @@
   padding: 20px 24px;
   overflow-y: auto;
   min-width: 0;
+}
+
+/* ── Topbar actions (theme + settings) ───────────────────────── */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.topbar-theme-btn,
+.topbar-hamburger {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.topbar-theme-btn:hover,
+.topbar-hamburger:hover {
+  color: var(--text-muted);
+  background: var(--elevated);
+}
+
+/* Hidden on desktop, shown on mobile */
+.topbar-hamburger { display: none; }
+
+/* ── Sidebar backdrop ────────────────────────────────────────── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+}
+
+@media (min-width: 641px) {
+  .sidebar-backdrop { display: none; }
+}
+
+/* ── Responsive layout ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .topbar-hamburger { display: flex; }
+
+  .topbar-brand { font-size: 12px; }
+
+  .tab-pill { padding: 4px 10px; font-size: 12px; }
+
+  .app-main { padding: 14px 14px; }
 }

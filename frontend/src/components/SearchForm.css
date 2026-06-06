@@ -96,7 +96,7 @@
   font-weight: 400;
   color: var(--text-muted);
   background: var(--elevated);
-  border: 0.5px solid #2a2a2e;
+  border: 0.5px solid var(--border);
   border-radius: 20px;
   padding: 3px 10px;
   cursor: pointer;
@@ -274,4 +274,41 @@
   color: var(--green) !important;
   border-color: var(--green) !important;
   background: var(--green-bg) !important;
+}
+
+/* ── Light mode overrides ───────────────────────────────────── */
+[data-theme="light"] .filter-chip-active {
+  color: var(--accent) !important;
+  background: rgba(91, 87, 214, 0.08) !important;
+  border-color: rgba(91, 87, 214, 0.35) !important;
+}
+
+[data-theme="light"] .active-search-bar {
+  background: rgba(91, 87, 214, 0.06);
+  border-color: rgba(91, 87, 214, 0.3);
+}
+
+[data-theme="light"] .btn-update-search {
+  color: var(--accent);
+  background: rgba(91, 87, 214, 0.06);
+  border-color: rgba(91, 87, 214, 0.3);
+}
+
+/* ── Mobile responsive ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .search-main-row {
+    flex-wrap: wrap;
+  }
+
+  .search-main-row > .search-input-wrap:first-child {
+    flex-basis: 100%;
+  }
+
+  .search-input-location {
+    max-width: none;
+  }
+
+  .filter-stale-toggle {
+    margin-left: 0;
+  }
 }
