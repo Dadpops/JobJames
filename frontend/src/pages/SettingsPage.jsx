@@ -55,6 +55,15 @@ export default function SettingsPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Keep the searches list in sync when a search is saved or deleted from another page
+  useEffect(() => {
+    function onSearchSaved() {
+      getSavedSearches().then(setSearches).catch(() => {})
+    }
+    window.addEventListener('jobjames:search-saved', onSearchSaved)
+    return () => window.removeEventListener('jobjames:search-saved', onSearchSaved)
+  }, [])
+
   function set(key, value) {
     setCfg(c => ({ ...c, [key]: value }))
   }
