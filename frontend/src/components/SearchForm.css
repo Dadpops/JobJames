@@ -210,3 +210,68 @@
   font-size: 11px;
   color: var(--green);
 }
+
+/* ── Active saved search editing bar ────────────────────── */
+.active-search-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1929;
+  border: 0.5px solid #4a47a3;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+.active-search-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.active-search-label strong {
+  color: var(--accent-muted);
+  font-weight: 500;
+}
+
+.active-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: 11px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.active-search-clear:hover { color: var(--red); }
+
+/* ── Update / Save-as-new actions ───────────────────────── */
+.save-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-update-search {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-muted);
+  background: #1a1929;
+  border: 0.5px solid #4a47a3;
+  border-radius: 5px;
+  padding: 3px 10px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-update-search:hover:not(:disabled) {
+  background: #221f3a;
+  border-color: var(--accent-muted);
+}
+
+.btn-update-search:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-update-saved {
+  color: var(--green) !important;
+  border-color: var(--green) !important;
+  background: var(--green-bg) !important;
+}

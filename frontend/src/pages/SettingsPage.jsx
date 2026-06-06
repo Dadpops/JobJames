@@ -1,29 +1,67 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   getSettings, saveSettings,
   getSavedSearches, updateSavedSearch, deleteSavedSearch, runSavedSearch,
-  API_BASE,
 } from '../api/client'
-import InfoTooltip from '../components/InfoTooltip'
 import './SettingsPage.css'
 
 const SCHEDULES = ['off', 'daily', 'twice_daily']
 const SCHEDULE_LABELS = { off: 'Off', daily: 'Daily', twice_daily: 'Twice daily' }
 const FREQ_OPTIONS = ['off', 'daily', 'weekly']
 
-const SECTION_TOOLTIPS = {
-  'Email Digest': 'Sends a scheduled summary of overdue follow-ups and new matches to your inbox.',
-  'SMTP Configuration': 'Outgoing mail server settings used for all automated emails and digests.',
-  'Saved Searches': 'Searches saved from the Search page. Set a schedule to run them automatically and email results.',
+const CRITERIA_LABELS = {
+  date_posted:      { any: null, day: '24h', week: 'This week', month: 'This month' },
+  experience_level: { any: null, entry: 'Entry', mid: 'Mid', senior: 'Senior' },
+  job_type:         { any: null, fulltime: 'Full-time', parttime: 'Part-time', contract: 'Contract', internship: 'Internship' },
+}
+
+function parseCriteria(criteria_json) {
+  try { return JSON.parse(criteria_json) } catch { return null }
+}
+
+function CriteriaSummary({ criteria }) {
+  if (!criteria) return <span className="search-criteria">—</span>
+  const parts = [criteria.title]
+  if (criteria.location) parts.push(criteria.location)
+  return <span className="search-criteria">{parts.join(' · ')}</span>
+}
+
+function CriteriaDetail({ criteria }) {
+  if (!criteria) return null
+  const rows = []
+  if (criteria.title) rows.push(['Keywords', criteria.title])
+  if (criteria.location) rows.push(['Location', criteria.location])
+  if (criteria.remote) rows.push(['Remote', 'Yes'])
+  if (criteria.salary_min || criteria.salary_max) {
+    const min = criteria.salary_min ? `$${(criteria.salary_min / 1000).toFixed(0)}k` : '—'
+    const max = criteria.salary_max ? `$${(criteria.salary_max / 1000).toFixed(0)}k` : '—'
+    rows.push(['Salary', `${min} – ${max}`])
+  }
+  if (criteria.sources?.length) rows.push(['Sources', criteria.sources.join(', ')])
+  const date = CRITERIA_LABELS.date_posted[criteria.date_posted]
+  if (date) rows.push(['Posted', date])
+  const exp = CRITERIA_LABELS.experience_level[criteria.experience_level]
+  if (exp) rows.push(['Level', exp])
+  const type = CRITERIA_LABELS.job_type[criteria.job_type]
+  if (type) rows.push(['Type', type])
+
+  return (
+    <div className="criteria-detail">
+      {rows.map(([label, val]) => (
+        <div key={label} className="criteria-detail-row">
+          <span className="criteria-detail-label">{label}</span>
+          <span className="criteria-detail-val">{val}</span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function Section({ title, children }) {
   return (
     <section className="settings-section">
-      <h2 className="settings-section-title">
-        {title}
-        {SECTION_TOOLTIPS[title] && <InfoTooltip text={SECTION_TOOLTIPS[title]} />}
-      </h2>
+      <h2 className="settings-section-title">{title}</h2>
       {children}
     </section>
   )
@@ -39,6 +77,8 @@ function Field({ label, hint, children }) {
 }
 
 export default function SettingsPage() {
+  const navigate = useNavigate()
+
   const [cfg, setCfg]           = useState({})
   const [searches, setSearches] = useState([])
   const [loading, setLoading]   = useState(true)
@@ -48,6 +88,7 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState(() => localStorage.getItem('jobjames_display_name') || '')
   const [nameDraft, setNameDraft]     = useState('')
   const [editingName, setEditingName] = useState(false)
+  const [expandedSearchId, setExpandedSearchId] = useState(null)
 
   useEffect(() => {
     Promise.all([getSettings(), getSavedSearches()])
@@ -55,7 +96,7 @@ export default function SettingsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Keep the searches list in sync when a search is saved or deleted from another page
+  // Sync when a search is saved from the home page while settings is open
   useEffect(() => {
     function onSearchSaved() {
       getSavedSearches().then(setSearches).catch(() => {})
@@ -100,7 +141,7 @@ export default function SettingsPage() {
       await saveSettings(cfg)
       const to = cfg.digest_to || prompt('Send test email to:')
       if (!to) { setTestState('idle'); return }
-      const res = await fetch(`${API_BASE}/jobs/email`, {
+      const res = await fetch('/api/jobs/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to }),
@@ -126,7 +167,44 @@ export default function SettingsPage() {
   async function handleDeleteSearch(id) {
     await deleteSavedSearch(id)
     setSearches(ss => ss.filter(s => s.id !== id))
-    window.dispatchEvent(new CustomEvent('jobjames:search-saved'))
+    if (expandedSearchId === id) setExpandedSearchId(null)
+  }
+
+  function handleEditSearch(search) {
+    navigate('/', {
+      state: {
+        autoSearch: search.criteria_json,
+        activeSavedSearch: { id: search.id, name: search.name },
+      },
+    })
+  }
+
+  function SearchNameCell({ search }) {
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState(search.name)
+    function commit() {
+      setEditing(false)
+      const val = draft.trim()
+      if (val && val !== search.name) handleSearchUpdate(search.id, { name: val })
+    }
+    if (!editing) return (
+      <span
+        className="search-inline search-name-inline"
+        onClick={() => { setDraft(search.name); setEditing(true) }}
+        title="Click to rename"
+      >
+        {search.name}
+        <span className="search-name-edit-hint">rename</span>
+      </span>
+    )
+    return (
+      <input
+        autoFocus type="text" className="search-inline-input"
+        value={draft} onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+      />
+    )
   }
 
   function SearchEmailCell({ search }) {
@@ -217,13 +295,8 @@ export default function SettingsPage() {
 
       {/* ── Email Digest ── */}
       <Section title="Email Digest">
-        <p className="settings-desc">
-          The email digest sends you a summary of new job matches and overdue follow-ups on your chosen schedule.
-          Configure your SMTP settings below to enable sending.
-          <strong> Gmail users: use an App Password, not your account password.</strong>
-        </p>
         <div className="settings-grid">
-          <Field label="Recipient email" hint="Where the digest is sent">
+          <Field label="Recipient email">
             <input
               type="email"
               value={cfg.digest_to || ''}
@@ -231,12 +304,12 @@ export default function SettingsPage() {
               placeholder="you@example.com"
             />
           </Field>
-          <Field label="Frequency" hint="How often to send">
+          <Field label="Frequency">
             <select value={cfg.digest_frequency || 'off'} onChange={e => set('digest_frequency', e.target.value)}>
               {FREQ_OPTIONS.map(f => <option key={f} value={f}>{f === 'off' ? 'Off' : f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
             </select>
           </Field>
-          <Field label="Send time" hint="24-hour format, e.g. 08:00">
+          <Field label="Send time" hint="24-hour, e.g. 08:00">
             <input
               type="time"
               value={cfg.digest_time || '08:00'}
@@ -248,28 +321,24 @@ export default function SettingsPage() {
 
       {/* ── SMTP ── */}
       <Section title="SMTP Configuration">
-        <p className="settings-desc">
-          Configure your outgoing mail server so JobJames can send digests and job emails directly.
-          If left blank, the Resend API is used instead.
-          <strong> Gmail users:</strong> use <code>smtp.gmail.com</code>, port <code>587</code>, and an App Password (not your regular password).
-        </p>
+        <p className="settings-desc">Configure SMTP to send emails directly. If left blank, Resend API is used instead.</p>
         <div className="settings-grid">
-          <Field label="Host" hint="SMTP server address, e.g. smtp.gmail.com">
+          <Field label="Host">
             <input value={cfg.smtp_host || ''} onChange={e => set('smtp_host', e.target.value)} placeholder="smtp.gmail.com" />
           </Field>
-          <Field label="Port" hint="587 for TLS (recommended), 465 for SSL, 25 for plain">
+          <Field label="Port">
             <input type="number" value={cfg.smtp_port || ''} onChange={e => set('smtp_port', e.target.value)} placeholder="587" />
           </Field>
-          <Field label="Username" hint="Your email address or SMTP login">
+          <Field label="Username">
             <input value={cfg.smtp_username || ''} onChange={e => set('smtp_username', e.target.value)} placeholder="you@gmail.com" />
           </Field>
-          <Field label="Password" hint="Gmail: use an App Password from your Google account settings">
+          <Field label="Password">
             <input type="password" value={cfg.smtp_password || ''} onChange={e => set('smtp_password', e.target.value)} placeholder="••••••••" />
           </Field>
-          <Field label="From address" hint="Shown as the sender name and address">
+          <Field label="From address">
             <input value={cfg.smtp_from || ''} onChange={e => set('smtp_from', e.target.value)} placeholder="JobJames <you@gmail.com>" />
           </Field>
-          <Field label="TLS" hint="Encrypts the connection — required by most modern mail servers">
+          <Field label="TLS">
             <label className="settings-toggle">
               <input type="checkbox" checked={(cfg.smtp_tls || 'true') === 'true'}
                 onChange={e => set('smtp_tls', e.target.checked ? 'true' : 'false')} />
@@ -277,23 +346,20 @@ export default function SettingsPage() {
             </label>
           </Field>
         </div>
-        <div className="smtp-test-row">
-          <button
-            type="button"
-            className="btn-secondary btn-test"
-            onClick={handleTestSmtp}
-            disabled={testState === 'sending'}
-          >
-            {testState === 'sending' ? 'Sending…' : testState === 'ok' ? 'Sent!' : testState === 'error' ? 'Failed — check SMTP settings' : 'Send test email'}
-          </button>
-          <span className="smtp-test-hint">Saves settings first, then sends a test digest to the recipient email above.</span>
-        </div>
+        <button
+          type="button"
+          className="btn-secondary btn-test"
+          onClick={handleTestSmtp}
+          disabled={testState === 'sending'}
+        >
+          {testState === 'sending' ? 'Sending…' : testState === 'ok' ? 'Sent!' : testState === 'error' ? 'Failed' : 'Send test email'}
+        </button>
       </Section>
 
       {/* ── Saved Searches ── */}
       <Section title="Saved Searches">
         <p className="settings-desc">
-          Searches saved from the Search page. Set a schedule to run them automatically.
+          Searches saved from the Search page. Click a name to rename it, click Expand to see full criteria, or click Edit to load it back into the search form.
         </p>
         {searches.length === 0 ? (
           <p className="settings-empty">No saved searches yet. Run a search and click <strong>Save search</strong>.</p>
@@ -314,36 +380,56 @@ export default function SettingsPage() {
               </thead>
               <tbody>
                 {searches.map(s => {
-                  const criteria = (() => { try { const c = JSON.parse(s.criteria_json); return `${c.title}${c.location ? ` · ${c.location}` : ''}` } catch { return '—' } })()
+                  const criteria = parseCriteria(s.criteria_json)
+                  const isExpanded = expandedSearchId === s.id
                   return (
-                    <tr key={s.id}>
-                      <td className="search-name">{s.name}</td>
-                      <td className="search-criteria">{criteria}</td>
-                      <td>
-                        <select
-                          className="schedule-select"
-                          value={s.schedule}
-                          onChange={e => handleSearchUpdate(s.id, { schedule: e.target.value })}
-                        >
-                          {SCHEDULES.map(v => <option key={v} value={v}>{SCHEDULE_LABELS[v]}</option>)}
-                        </select>
-                      </td>
-                      <td className="search-email-cell"><SearchEmailCell search={s} /></td>
-                      <td className="search-limit-cell"><SearchLimitCell search={s} /></td>
-                      <td className="search-last-run">{s.last_run ? s.last_run.slice(0, 16) : '—'}</td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={s.is_enabled}
-                          onChange={e => handleSearchUpdate(s.id, { is_enabled: e.target.checked })}
-                          className="search-toggle"
-                        />
-                      </td>
-                      <td className="search-actions">
-                        <button className="btn-run" onClick={() => handleRunNow(s.id)} title="Run now">▶</button>
-                        <button className="btn-del" onClick={() => handleDeleteSearch(s.id)} title="Delete">✕</button>
-                      </td>
-                    </tr>
+                    <>
+                      <tr key={s.id} className={isExpanded ? 'search-row-expanded' : ''}>
+                        <td className="search-name"><SearchNameCell search={s} /></td>
+                        <td className="search-criteria-cell">
+                          <button
+                            className="criteria-expand-btn"
+                            onClick={() => setExpandedSearchId(isExpanded ? null : s.id)}
+                            title={isExpanded ? 'Collapse' : 'Expand criteria'}
+                          >
+                            <CriteriaSummary criteria={criteria} />
+                            <span className="criteria-expand-arrow">{isExpanded ? '▲' : '▼'}</span>
+                          </button>
+                        </td>
+                        <td>
+                          <select
+                            className="schedule-select"
+                            value={s.schedule}
+                            onChange={e => handleSearchUpdate(s.id, { schedule: e.target.value })}
+                          >
+                            {SCHEDULES.map(v => <option key={v} value={v}>{SCHEDULE_LABELS[v]}</option>)}
+                          </select>
+                        </td>
+                        <td className="search-email-cell"><SearchEmailCell search={s} /></td>
+                        <td className="search-limit-cell"><SearchLimitCell search={s} /></td>
+                        <td className="search-last-run">{s.last_run ? s.last_run.slice(0, 16) : '—'}</td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={s.is_enabled}
+                            onChange={e => handleSearchUpdate(s.id, { is_enabled: e.target.checked })}
+                            className="search-toggle"
+                          />
+                        </td>
+                        <td className="search-actions">
+                          <button className="btn-edit-search" onClick={() => handleEditSearch(s)} title="Edit in search form">Edit</button>
+                          <button className="btn-run" onClick={() => handleRunNow(s.id)} title="Run now">▶</button>
+                          <button className="btn-del" onClick={() => handleDeleteSearch(s.id)} title="Delete">✕</button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${s.id}-detail`} className="search-row-detail">
+                          <td colSpan={8}>
+                            <CriteriaDetail criteria={criteria} />
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   )
                 })}
               </tbody>

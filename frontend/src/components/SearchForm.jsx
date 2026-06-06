@@ -48,13 +48,32 @@ const DEFAULT = {
   job_type: 'any',
 }
 
-export default function SearchForm({ onSearch, loading, resultCount, hideStale, onToggleStale, onSaveSearch }) {
-  const [form, setForm]                   = useState(DEFAULT)
-  const [suggestions, setSuggestions]     = useState([])
-  const [activeSuggestion, setActive]     = useState(-1)
-  const [showSalary, setShowSalary]       = useState(false)
-  const [showSaveForm, setShowSaveForm]   = useState(false)
-  const [saveName, setSaveName]           = useState('')
+// Props:
+//   onSearch(criteria)       — run a search
+//   loading                  — search in progress
+//   resultCount              — show result count row when non-null
+//   hideStale / onToggleStale
+//   onSaveSearch(criteria)   — save as new search (or first-time save)
+//   loadedCriteria           — when set, populate form fields (from sidebar/settings click)
+//   activeSavedSearch        — { id, name } | null — show editing bar
+//   onClearActive()          — X clears the active saved search state + resets form
+//   onUpdateSearch(criteria) — overwrite active saved search criteria
+export default function SearchForm({
+  onSearch, loading, resultCount,
+  hideStale, onToggleStale,
+  onSaveSearch,
+  loadedCriteria,
+  activeSavedSearch,
+  onClearActive,
+  onUpdateSearch,
+}) {
+  const [form, setForm]               = useState(DEFAULT)
+  const [suggestions, setSuggestions] = useState([])
+  const [activeSuggestion, setActive] = useState(-1)
+  const [showSalary, setShowSalary]   = useState(false)
+  const [showSaveForm, setShowSaveForm] = useState(false)
+  const [saveName, setSaveName]       = useState('')
+  const [updateState, setUpdateState] = useState('idle') // idle | saving | saved
   const titleWrapRef = useRef(null)
 
   useEffect(() => {
@@ -67,6 +86,28 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Populate form when a saved search is loaded from the sidebar or settings
+  useEffect(() => {
+    if (!loadedCriteria) return
+    setForm({
+      title: loadedCriteria.title || '',
+      location: loadedCriteria.location || '',
+      remote: !!loadedCriteria.remote,
+      salary_min: loadedCriteria.salary_min != null ? String(loadedCriteria.salary_min) : '',
+      salary_max: loadedCriteria.salary_max != null ? String(loadedCriteria.salary_max) : '',
+      sources: loadedCriteria.sources?.length ? loadedCriteria.sources : [...SOURCES],
+      date_posted: loadedCriteria.date_posted || 'any',
+      experience_level: loadedCriteria.experience_level || 'any',
+      job_type: loadedCriteria.job_type || 'any',
+    })
+    // Auto-reveal salary inputs if the loaded search has salary criteria
+    if (loadedCriteria.salary_min != null || loadedCriteria.salary_max != null) {
+      setShowSalary(true)
+    }
+    setShowSaveForm(false)
+    setSaveName('')
+  }, [loadedCriteria])
 
   function set(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -107,24 +148,12 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
     e.preventDefault()
     if (!form.sources.length) return
     setSuggestions([])
-    onSearch({
-      title: form.title.trim(),
-      location: form.location.trim() || null,
-      remote: form.remote,
-      salary_min: form.salary_min ? parseInt(form.salary_min, 10) : null,
-      salary_max: form.salary_max ? parseInt(form.salary_max, 10) : null,
-      sources: form.sources,
-      date_posted: form.date_posted,
-      experience_level: form.experience_level,
-      job_type: form.job_type,
-    })
+    onSearch(getCurrentCriteria())
   }
 
-  // Not a form submit handler — called directly to avoid nested-form HTML issues
-  function commitSaveSearch() {
-    if (!saveName.trim() || !onSaveSearch) return
-    onSaveSearch({
-      name: saveName.trim(),
+  // Extract the current form values as a plain criteria object
+  function getCurrentCriteria() {
+    return {
       title: form.title.trim(),
       location: form.location.trim() || null,
       remote: form.remote,
@@ -134,9 +163,37 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
       date_posted: form.date_posted,
       experience_level: form.experience_level,
       job_type: form.job_type,
-    })
+    }
+  }
+
+  // Save as new search — uses a div (not nested form) to avoid submitting the outer form
+  function commitSaveSearch() {
+    if (!saveName.trim() || !onSaveSearch) return
+    onSaveSearch({ name: saveName.trim(), ...getCurrentCriteria() })
     setSaveName('')
     setShowSaveForm(false)
+  }
+
+  // Overwrite the active saved search with current form criteria
+  async function handleUpdate() {
+    if (!onUpdateSearch) return
+    setUpdateState('saving')
+    try {
+      await onUpdateSearch(getCurrentCriteria())
+      setUpdateState('saved')
+      setTimeout(() => setUpdateState('idle'), 2000)
+    } catch {
+      setUpdateState('idle')
+    }
+  }
+
+  // Clear active state + reset form to blank
+  function handleClearActive() {
+    if (onClearActive) onClearActive()
+    setForm({ ...DEFAULT })
+    setShowSalary(false)
+    setShowSaveForm(false)
+    setSaveName('')
   }
 
   const salaryLabel = form.salary_min || form.salary_max
@@ -146,6 +203,23 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
 
   return (
     <form className="search-form" onSubmit={handleSubmit}>
+      {/* ── Editing indicator — shown when a saved search is active ── */}
+      {activeSavedSearch && (
+        <div className="active-search-bar">
+          <span className="active-search-label">
+            editing: <strong>{activeSavedSearch.name}</strong>
+          </span>
+          <button
+            type="button"
+            className="active-search-clear"
+            onClick={handleClearActive}
+            title="Clear active search and reset form"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── Main row ──────────────────────────────────────────── */}
       <div className="search-main-row">
         <div className="search-input-wrap" ref={titleWrapRef}>
@@ -189,7 +263,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
 
       {/* ── Filter chips row ──────────────────────────────────── */}
       <div className="filter-chips-row">
-        {/* Remote */}
         <button
           type="button"
           className={`filter-chip${form.remote ? ' filter-chip-active' : ''}`}
@@ -198,7 +271,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
           Remote
         </button>
 
-        {/* Salary */}
         <button
           type="button"
           className={`filter-chip${salaryActive || showSalary ? ' filter-chip-active' : ''}`}
@@ -232,7 +304,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
 
         <div className="filter-chip-divider" />
 
-        {/* Sources */}
         {SOURCES.map(src => (
           <button
             key={src}
@@ -246,7 +317,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
 
         <div className="filter-chip-divider" />
 
-        {/* Date posted */}
         <button
           type="button"
           className={`filter-chip${form.date_posted !== 'any' ? ' filter-chip-active' : ''}`}
@@ -255,7 +325,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
           {DATE_LABELS[form.date_posted]}
         </button>
 
-        {/* Experience level */}
         <button
           type="button"
           className={`filter-chip${form.experience_level !== 'any' ? ' filter-chip-active' : ''}`}
@@ -264,7 +333,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
           {EXP_LABELS[form.experience_level]}
         </button>
 
-        {/* Job type */}
         <button
           type="button"
           className={`filter-chip${form.job_type !== 'any' ? ' filter-chip-active' : ''}`}
@@ -273,7 +341,6 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
           {TYPE_LABELS[form.job_type]}
         </button>
 
-        {/* Stale toggle — far right */}
         {onToggleStale && (
           <button
             type="button"
@@ -285,33 +352,75 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
         )}
       </div>
 
-      {/* ── Save search / result count row ────────────────────── */}
-      {resultCount != null && (
+      {/* ── Save / Update / result count row ──────────────────── */}
+      {(resultCount != null || activeSavedSearch) && (
         <div className="save-search-row">
-          <span className="results-count">{resultCount} result{resultCount !== 1 ? 's' : ''}</span>
-          {onSaveSearch && (
-            showSaveForm ? (
-              // Using a div instead of a nested <form> to avoid triggering the outer search form submit
-              <div className="save-search-form">
-                <input
-                  type="text"
-                  className="save-search-input"
-                  placeholder="Search name…"
-                  value={saveName}
-                  onChange={e => setSaveName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') { e.stopPropagation(); commitSaveSearch() }
-                    if (e.key === 'Escape') setShowSaveForm(false)
-                  }}
-                  autoFocus
-                />
-                <button type="button" className="btn-act save-search-confirm" onClick={commitSaveSearch}>Save</button>
-                <button type="button" className="save-search-cancel" onClick={() => setShowSaveForm(false)}>✕</button>
-              </div>
-            ) : (
-              <button type="button" className="save-search-btn" onClick={() => setShowSaveForm(true)}>
-                Save search
+          {resultCount != null && (
+            <span className="results-count">{resultCount} result{resultCount !== 1 ? 's' : ''}</span>
+          )}
+
+          {activeSavedSearch ? (
+            /* Editing mode: Update + Save as new */
+            <div className="save-search-actions">
+              <button
+                type="button"
+                className={`btn-act btn-update-search${updateState === 'saved' ? ' btn-update-saved' : ''}`}
+                onClick={handleUpdate}
+                disabled={updateState === 'saving'}
+              >
+                {updateState === 'saving' ? 'Saving…' : updateState === 'saved' ? '✓ Updated' : `Update "${activeSavedSearch.name}"`}
               </button>
+
+              {showSaveForm ? (
+                // Save-as-new name form — div not form to avoid triggering outer submit
+                <div className="save-search-form">
+                  <input
+                    type="text"
+                    className="save-search-input"
+                    placeholder="New search name…"
+                    value={saveName}
+                    onChange={e => setSaveName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.stopPropagation(); commitSaveSearch() }
+                      if (e.key === 'Escape') setShowSaveForm(false)
+                    }}
+                    autoFocus
+                  />
+                  <button type="button" className="btn-act save-search-confirm" onClick={commitSaveSearch}>Save as new</button>
+                  <button type="button" className="save-search-cancel" onClick={() => { setShowSaveForm(false); setSaveName('') }}>✕</button>
+                </div>
+              ) : (
+                <button type="button" className="save-search-btn" onClick={() => { setSaveName(''); setShowSaveForm(true) }}>
+                  Save as new
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Default mode: Save search */
+            onSaveSearch && (
+              showSaveForm ? (
+                // div not form — avoid nested-form HTML issue that triggers outer search submit
+                <div className="save-search-form">
+                  <input
+                    type="text"
+                    className="save-search-input"
+                    placeholder="Search name…"
+                    value={saveName}
+                    onChange={e => setSaveName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.stopPropagation(); commitSaveSearch() }
+                      if (e.key === 'Escape') setShowSaveForm(false)
+                    }}
+                    autoFocus
+                  />
+                  <button type="button" className="btn-act save-search-confirm" onClick={commitSaveSearch}>Save</button>
+                  <button type="button" className="save-search-cancel" onClick={() => setShowSaveForm(false)}>✕</button>
+                </div>
+              ) : (
+                <button type="button" className="save-search-btn" onClick={() => setShowSaveForm(true)}>
+                  Save search
+                </button>
+              )
             )
           )}
         </div>

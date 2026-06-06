@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import SearchForm from '../components/SearchForm'
 import JobCard from '../components/JobCard'
 import StatCards from '../components/StatCards'
-import { searchJobs, updateJobStatus, createSavedSearch, getTrackerEntries, runSavedSearch } from '../api/client'
+import { searchJobs, updateJobStatus, createSavedSearch, updateSavedSearch, getTrackerEntries } from '../api/client'
 import './HomePage.css'
 
 function isStaleJob(job) {
@@ -22,107 +22,108 @@ function countOverdueFollowups(entries) {
   ).length
 }
 
-// UNDO_DELAY: milliseconds a dismissed card stays visible with "Undo" button
-const UNDO_DELAY = 5000
-
 export default function HomePage() {
-  const [jobs, setJobs]               = useState([])
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState(null)
-  const [searched, setSearched]       = useState(false)
-  const [lastCriteria, setLast]       = useState(null)
-  const [hideStale, setHideStale]     = useState(false)
-  const [expandedJobId, setExpanded]  = useState(null)
-  const [followupsDue, setFollowups]  = useState(null)
-  // Set of job IDs currently in the undo-dismiss window (still visible but marked dismissed)
+  const location = useLocation()
+
+  const [jobs, setJobs]                   = useState([])
+  const [loading, setLoading]             = useState(false)
+  const [error, setError]                 = useState(null)
+  const [searched, setSearched]           = useState(false)
+  const [lastCriteria, setLastCriteria]   = useState(null)
+  const [hideStale, setHideStale]         = useState(false)
+  const [expandedJobId, setExpandedJobId] = useState(null)
+  const [followupsDue, setFollowupsDue]   = useState(null)
   const [recentlyDismissed, setRecentlyDismissed] = useState(() => new Set())
   const dismissTimers = useRef({})
 
-  const location = useLocation()
+  // Saved search editing state
+  const [activeSavedSearch, setActiveSavedSearch] = useState(null) // { id, name } | null
+  const [loadedCriteria, setLoadedCriteria]       = useState(null) // object | null
 
   useEffect(() => {
     getTrackerEntries()
-      .then(entries => setFollowups(countOverdueFollowups(entries)))
-      .catch(() => setFollowups(0))
+      .then(entries => setFollowupsDue(countOverdueFollowups(entries)))
+      .catch(() => setFollowupsDue(0))
   }, [])
 
-  // Auto-run a saved search when the sidebar passes criteria via router state
-  useEffect(() => {
-    const state = location.state
-    if (!state?.autoSearch) return
-    // Clear router state so navigating back doesn't re-run
-    window.history.replaceState({}, '')
-    try {
-      const criteria = typeof state.autoSearch === 'string'
-        ? JSON.parse(state.autoSearch)
-        : state.autoSearch
-      handleSearch(criteria)
-    } catch {
-      // malformed criteria — ignore
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.autoSearch])
-
-  async function handleSearch(criteria) {
+  const handleSearch = useCallback(async function(criteria) {
     setLoading(true)
     setError(null)
-    setExpanded(null)
-    setRecentlyDismissed(new Set())
+    setExpandedJobId(null)
     try {
       const results = await searchJobs(criteria)
       setJobs(results)
       setSearched(true)
-      setLast(criteria)
+      setLastCriteria(criteria)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  // Auto-run saved search navigated from sidebar or settings
+  useEffect(() => {
+    const state = location.state
+    if (!state?.autoSearch) return
+    window.history.replaceState({}, '')
+    try {
+      const criteria = JSON.parse(state.autoSearch)
+      setLoadedCriteria(criteria)
+      if (state.activeSavedSearch) setActiveSavedSearch(state.activeSavedSearch)
+      handleSearch(criteria)
+    } catch {
+      // malformed criteria_json — ignore
+    }
+  }, [location.state?.autoSearch, handleSearch])
 
   async function handleSaveSearch({ name, ...criteria }) {
     try {
-      await createSavedSearch({
+      const created = await createSavedSearch({
         name,
         criteria_json: JSON.stringify(criteria),
         schedule: 'off',
       })
-      // Notify the sidebar so it refreshes its saved-search list immediately
+      setActiveSavedSearch({ id: created.id, name: created.name })
       window.dispatchEvent(new CustomEvent('jobjames:search-saved'))
     } catch {
       // silent
     }
   }
 
-  // Handles star (save/unsave) and dismiss/undo from JobCard
+  async function handleUpdateSavedSearch(criteria) {
+    if (!activeSavedSearch) return
+    await updateSavedSearch(activeSavedSearch.id, {
+      criteria_json: JSON.stringify(criteria),
+    })
+    window.dispatchEvent(new CustomEvent('jobjames:search-saved'))
+  }
+
+  function handleClearActive() {
+    setActiveSavedSearch(null)
+    setLoadedCriteria(null)
+  }
+
   async function handleStatusChange(jobId, status) {
     try {
       const updated = await updateJobStatus(jobId, status)
-
       if (status === 'dismissed') {
-        // Update job status in state (keep it in the list for the undo window)
-        setJobs(prev => prev.map(j => j.id === jobId ? updated : j))
+        setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'dismissed' } : j))
         setRecentlyDismissed(prev => new Set([...prev, jobId]))
-        if (expandedJobId === jobId) setExpanded(null)
-
-        // After UNDO_DELAY, remove job from list if it is still dismissed
         const timer = setTimeout(() => {
           setJobs(prev => prev.filter(j => !(j.id === jobId && j.status === 'dismissed')))
           setRecentlyDismissed(prev => { const n = new Set(prev); n.delete(jobId); return n })
           delete dismissTimers.current[jobId]
-        }, UNDO_DELAY)
+        }, 5000)
         dismissTimers.current[jobId] = timer
-
+        if (expandedJobId === jobId) setExpandedJobId(null)
       } else {
-        // Save/unsave or undo-dismiss
         setJobs(prev => prev.map(j => j.id === updated.id ? updated : j))
         if (recentlyDismissed.has(jobId)) {
-          // User undid the dismiss — cancel the removal timer
           clearTimeout(dismissTimers.current[jobId])
           delete dismissTimers.current[jobId]
           setRecentlyDismissed(prev => { const n = new Set(prev); n.delete(jobId); return n })
         }
-        // Notify sidebar to refresh saved-job count
         window.dispatchEvent(new CustomEvent('jobjames:job-saved'))
       }
     } catch (err) {
@@ -131,10 +132,9 @@ export default function HomePage() {
   }
 
   function handleExpand(jobId) {
-    setExpanded(prev => (prev === jobId ? null : jobId))
+    setExpandedJobId(prev => (prev === jobId ? null : jobId))
   }
 
-  // Show all jobs except dismissed ones that are past the undo window
   const displayJobs = (hideStale ? jobs.filter(j => !isStaleJob(j)) : jobs)
     .filter(j => j.status !== 'dismissed' || recentlyDismissed.has(j.id))
 
@@ -146,7 +146,11 @@ export default function HomePage() {
         resultCount={searched && !loading ? displayJobs.length : null}
         hideStale={hideStale}
         onToggleStale={() => setHideStale(v => !v)}
-        onSaveSearch={lastCriteria ? handleSaveSearch : null}
+        onSaveSearch={searched ? handleSaveSearch : null}
+        loadedCriteria={loadedCriteria}
+        activeSavedSearch={activeSavedSearch}
+        onClearActive={handleClearActive}
+        onUpdateSearch={activeSavedSearch ? handleUpdateSavedSearch : null}
       />
 
       {error && <p className="home-error">{error}</p>}

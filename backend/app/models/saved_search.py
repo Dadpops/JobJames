@@ -25,6 +25,7 @@ class SavedSearchCreate(BaseModel):
 
 class SavedSearchUpdate(BaseModel):
     name: Optional[str] = None
+    criteria_json: Optional[str] = None
     schedule: Optional[str] = None
     is_enabled: Optional[bool] = None
     recipient_email: Optional[str] = None
