@@ -22,7 +22,7 @@ export default function SavedPage() {
   async function handleStatusChange(jobId, status) {
     try {
       const updated = await updateJobStatus(jobId, status)
-      if (status === 'dismissed') {
+      if (status !== 'saved') {
         setJobs(prev => prev.filter(j => j.id !== jobId))
       } else {
         setJobs(prev => prev.map(j => j.id === updated.id ? updated : j))
@@ -48,12 +48,12 @@ export default function SavedPage() {
   return (
     <div className="saved-page">
       <div className="saved-header">
-        <div>
+        <div className="saved-title-row">
           <h2 className="saved-title">Saved Jobs</h2>
           {!loading && (
-            <p className="saved-subtitle">
-              {jobs.length} saved listing{jobs.length !== 1 ? 's' : ''}
-            </p>
+            <span className="saved-subtitle">
+              {jobs.length} listing{jobs.length !== 1 ? 's' : ''}
+            </span>
           )}
         </div>
 

@@ -3,7 +3,7 @@ import json
 from fastapi import APIRouter, HTTPException
 
 from app.crawlers import run_crawlers
-from app.database import get_job, get_saved_jobs, set_status, upsert_jobs
+from app.database import get_dismissed_jobs, get_job, get_saved_jobs, set_status, upsert_jobs
 from app.models.job import JobListing, StatusUpdate
 from app.models.search import SearchRequest
 from app.services.deduplication import deduplicate
@@ -53,6 +53,12 @@ async def search_jobs(req: SearchRequest) -> list[JobListing]:
 @router.get("/saved", response_model=list[JobListing])
 async def saved_jobs() -> list[JobListing]:
     rows = await get_saved_jobs()
+    return [_from_row(r) for r in rows]
+
+
+@router.get("/dismissed", response_model=list[JobListing])
+async def dismissed_jobs() -> list[JobListing]:
+    rows = await get_dismissed_jobs()
     return [_from_row(r) for r in rows]
 
 

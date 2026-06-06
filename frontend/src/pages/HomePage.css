@@ -1,117 +1,40 @@
 .home {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
-
-.home-hero {
-  text-align: center;
-  padding: 2rem 0 0.5rem;
-}
-
-.home-hero h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-.home-hero p {
-  color: var(--text-muted);
-  margin-top: 0.5rem;
+  gap: 16px;
 }
 
 .home-error {
   color: var(--red);
-  text-align: center;
-  font-size: 0.9rem;
+  font-size: 12px;
 }
 
 .home-empty {
   color: var(--text-muted);
+  font-size: 12px;
   text-align: center;
-  font-size: 0.9rem;
+  padding: 40px 0;
 }
 
 .results {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-.results-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.results-count {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-.save-search-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  padding: 3px 10px;
-  transition: all 0.15s;
-}
-
-.save-search-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.save-search-form {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.save-search-input {
-  background: var(--bg);
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  color: var(--text);
-  font-size: 0.82rem;
-  font-family: inherit;
-  padding: 3px 8px;
-  outline: none;
-}
-
-.save-search-cancel {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  padding: 2px 4px;
-}
-
-.save-search-cancel:hover { color: var(--red); }
-
-.save-search-confirm {
-  font-size: 0.8rem;
-  color: var(--green);
+  gap: 12px;
 }
 
 .job-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
 .search-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 10px;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  padding: 2.5rem 0;
+  font-size: 12px;
+  padding: 40px 0;
 }
 
 @keyframes spin {
@@ -120,9 +43,9 @@
 
 .spinner {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border);
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
