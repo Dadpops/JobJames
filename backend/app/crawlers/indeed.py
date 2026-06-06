@@ -58,6 +58,11 @@ def _parse_job(item: dict, remote_search: bool = False) -> JobListing:
     sal_type = sal.get("type", "YEARLY")
     sal_min = _to_yearly(sal["min"], sal_type) if "min" in sal else None
     sal_max = _to_yearly(sal["max"], sal_type) if "max" in sal else None
+    # Indeed uses -1 as a sentinel for "no upper bound"; treat as absent
+    if sal_min is not None and sal_min < 0:
+        sal_min = None
+    if sal_max is not None and sal_max < 0:
+        sal_max = None
 
     # Remote — trust the search filter if used; also check per-item signals
     job_types = [

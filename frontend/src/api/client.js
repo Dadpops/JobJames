@@ -22,6 +22,12 @@ export async function getSavedJobs() {
   return res.json()
 }
 
+export async function getDismissedJobs() {
+  const res = await fetch(`${BASE}/jobs/dismissed`)
+  if (!res.ok) throw new Error(`Failed to load dismissed jobs: ${res.status}`)
+  return res.json()
+}
+
 export async function updateJobStatus(jobId, status) {
   const res = await fetch(`${BASE}/jobs/${jobId}/status`, {
     method: 'PATCH',
