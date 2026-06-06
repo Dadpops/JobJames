@@ -40,6 +40,8 @@ async def reorder_tracker(body: list[_ReorderItem]):
 
 @router.get("", response_model=list[TrackerEntry])
 async def list_tracker():
+    """Return all tracker entries ordered by sort_order then date_added.
+    Consumed by: TrackerPage, Sidebar (pipeline counts), HomePage (overdue follow-ups)."""
     return await get_tracker_entries()
 
 
@@ -81,6 +83,8 @@ async def remove_tracker_entry(entry_id: str):
 
 @router.post("/from-job/{job_id}", response_model=TrackerEntry, status_code=201)
 async def add_from_job(job_id: str):
+    """Create a tracker entry pre-populated from an existing job record.
+    Consumed by: JobCard (Add to Tracker button) via client.addJobToTracker."""
     from app.database import get_job
     job = await get_job(job_id)
     if not job:

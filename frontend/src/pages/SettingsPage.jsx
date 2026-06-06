@@ -4,16 +4,26 @@ import {
   getSavedSearches, updateSavedSearch, deleteSavedSearch, runSavedSearch,
   API_BASE,
 } from '../api/client'
+import InfoTooltip from '../components/InfoTooltip'
 import './SettingsPage.css'
 
 const SCHEDULES = ['off', 'daily', 'twice_daily']
 const SCHEDULE_LABELS = { off: 'Off', daily: 'Daily', twice_daily: 'Twice daily' }
 const FREQ_OPTIONS = ['off', 'daily', 'weekly']
 
+const SECTION_TOOLTIPS = {
+  'Email Digest': 'Sends a scheduled summary of overdue follow-ups and new matches to your inbox.',
+  'SMTP Configuration': 'Outgoing mail server settings used for all automated emails and digests.',
+  'Saved Searches': 'Searches saved from the Search page. Set a schedule to run them automatically and email results.',
+}
+
 function Section({ title, children }) {
   return (
     <section className="settings-section">
-      <h2 className="settings-section-title">{title}</h2>
+      <h2 className="settings-section-title">
+        {title}
+        {SECTION_TOOLTIPS[title] && <InfoTooltip text={SECTION_TOOLTIPS[title]} />}
+      </h2>
       {children}
     </section>
   )
@@ -107,6 +117,7 @@ export default function SettingsPage() {
   async function handleDeleteSearch(id) {
     await deleteSavedSearch(id)
     setSearches(ss => ss.filter(s => s.id !== id))
+    window.dispatchEvent(new CustomEvent('jobjames:search-saved'))
   }
 
   function SearchEmailCell({ search }) {
@@ -197,8 +208,13 @@ export default function SettingsPage() {
 
       {/* ── Email Digest ── */}
       <Section title="Email Digest">
+        <p className="settings-desc">
+          The email digest sends you a summary of new job matches and overdue follow-ups on your chosen schedule.
+          Configure your SMTP settings below to enable sending.
+          <strong> Gmail users: use an App Password, not your account password.</strong>
+        </p>
         <div className="settings-grid">
-          <Field label="Recipient email">
+          <Field label="Recipient email" hint="Where the digest is sent">
             <input
               type="email"
               value={cfg.digest_to || ''}
@@ -206,12 +222,12 @@ export default function SettingsPage() {
               placeholder="you@example.com"
             />
           </Field>
-          <Field label="Frequency">
+          <Field label="Frequency" hint="How often to send">
             <select value={cfg.digest_frequency || 'off'} onChange={e => set('digest_frequency', e.target.value)}>
               {FREQ_OPTIONS.map(f => <option key={f} value={f}>{f === 'off' ? 'Off' : f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
             </select>
           </Field>
-          <Field label="Send time" hint="24-hour, e.g. 08:00">
+          <Field label="Send time" hint="24-hour format, e.g. 08:00">
             <input
               type="time"
               value={cfg.digest_time || '08:00'}
@@ -223,24 +239,28 @@ export default function SettingsPage() {
 
       {/* ── SMTP ── */}
       <Section title="SMTP Configuration">
-        <p className="settings-desc">Configure SMTP to send emails directly. If left blank, Resend API is used instead.</p>
+        <p className="settings-desc">
+          Configure your outgoing mail server so JobJames can send digests and job emails directly.
+          If left blank, the Resend API is used instead.
+          <strong> Gmail users:</strong> use <code>smtp.gmail.com</code>, port <code>587</code>, and an App Password (not your regular password).
+        </p>
         <div className="settings-grid">
-          <Field label="Host">
+          <Field label="Host" hint="SMTP server address, e.g. smtp.gmail.com">
             <input value={cfg.smtp_host || ''} onChange={e => set('smtp_host', e.target.value)} placeholder="smtp.gmail.com" />
           </Field>
-          <Field label="Port">
+          <Field label="Port" hint="587 for TLS (recommended), 465 for SSL, 25 for plain">
             <input type="number" value={cfg.smtp_port || ''} onChange={e => set('smtp_port', e.target.value)} placeholder="587" />
           </Field>
-          <Field label="Username">
+          <Field label="Username" hint="Your email address or SMTP login">
             <input value={cfg.smtp_username || ''} onChange={e => set('smtp_username', e.target.value)} placeholder="you@gmail.com" />
           </Field>
-          <Field label="Password">
+          <Field label="Password" hint="Gmail: use an App Password from your Google account settings">
             <input type="password" value={cfg.smtp_password || ''} onChange={e => set('smtp_password', e.target.value)} placeholder="••••••••" />
           </Field>
-          <Field label="From address">
+          <Field label="From address" hint="Shown as the sender name and address">
             <input value={cfg.smtp_from || ''} onChange={e => set('smtp_from', e.target.value)} placeholder="JobJames <you@gmail.com>" />
           </Field>
-          <Field label="TLS">
+          <Field label="TLS" hint="Encrypts the connection — required by most modern mail servers">
             <label className="settings-toggle">
               <input type="checkbox" checked={(cfg.smtp_tls || 'true') === 'true'}
                 onChange={e => set('smtp_tls', e.target.checked ? 'true' : 'false')} />
@@ -248,14 +268,17 @@ export default function SettingsPage() {
             </label>
           </Field>
         </div>
-        <button
-          type="button"
-          className="btn-secondary btn-test"
-          onClick={handleTestSmtp}
-          disabled={testState === 'sending'}
-        >
-          {testState === 'sending' ? 'Sending…' : testState === 'ok' ? 'Sent!' : testState === 'error' ? 'Failed' : 'Send test email'}
-        </button>
+        <div className="smtp-test-row">
+          <button
+            type="button"
+            className="btn-secondary btn-test"
+            onClick={handleTestSmtp}
+            disabled={testState === 'sending'}
+          >
+            {testState === 'sending' ? 'Sending…' : testState === 'ok' ? 'Sent!' : testState === 'error' ? 'Failed — check SMTP settings' : 'Send test email'}
+          </button>
+          <span className="smtp-test-hint">Saves settings first, then sends a test digest to the recipient email above.</span>
+        </div>
       </Section>
 
       {/* ── Saved Searches ── */}

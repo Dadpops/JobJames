@@ -17,12 +17,15 @@ router = APIRouter()
 
 @router.get("", response_model=list[SavedSearch])
 async def list_searches():
+    """Return all saved searches. Consumed by: Sidebar, SettingsPage."""
     rows = await get_saved_searches()
     return [_parse(r) for r in rows]
 
 
 @router.post("", response_model=SavedSearch, status_code=201)
 async def create_search(body: SavedSearchCreate):
+    """Persist a new saved search and register its cron schedule.
+    Consumed by: HomePage (Save search form in SearchForm)."""
     from app.services import scheduler as sched
     row = {
         "id": str(uuid.uuid4()),
@@ -64,6 +67,8 @@ async def delete_search(search_id: str):
 
 @router.post("/{search_id}/run", status_code=200)
 async def run_search_now(search_id: str):
+    """Execute a saved search immediately and return the result count.
+    Consumed by: SettingsPage (Run now button), Sidebar (saved search click via HomePage)."""
     from app.services.scheduler import run_saved_search
     row = await get_saved_search(search_id)
     if not row:

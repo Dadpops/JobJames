@@ -160,8 +160,23 @@
   color: var(--text-faint);
 }
 
-.btn-dismiss-quick:hover:not(:disabled) { color: var(--red); border-color: var(--red); }
-.btn-dismiss-quick:disabled { opacity: 0.25; cursor: not-allowed; }
+.btn-dismiss-quick:hover { color: var(--red); border-color: var(--red); }
+
+/* Undo dismiss — shown in place of Dismiss when a job is dismissed */
+.btn-undo-dismiss {
+  font-size: 10px;
+  padding: 2px 7px;
+  color: var(--accent-muted);
+  border-color: var(--accent);
+}
+
+.btn-undo-dismiss:hover { background: #1a1929; }
+
+/* Dim dismissed cards in main results (undo window) */
+.job-card-dismissed {
+  opacity: 0.55;
+  border-color: #28282e !important;
+}
 
 /* ── Expanded panel ───────────────────────────────────────── */
 .job-expanded {
