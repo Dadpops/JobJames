@@ -120,8 +120,8 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
     })
   }
 
-  function handleSaveSearch(e) {
-    e.preventDefault()
+  // Not a form submit handler — called directly to avoid nested-form HTML issues
+  function commitSaveSearch() {
     if (!saveName.trim() || !onSaveSearch) return
     onSaveSearch({
       name: saveName.trim(),
@@ -291,19 +291,23 @@ export default function SearchForm({ onSearch, loading, resultCount, hideStale, 
           <span className="results-count">{resultCount} result{resultCount !== 1 ? 's' : ''}</span>
           {onSaveSearch && (
             showSaveForm ? (
-              <form className="save-search-form" onSubmit={handleSaveSearch}>
+              // Using a div instead of a nested <form> to avoid triggering the outer search form submit
+              <div className="save-search-form">
                 <input
                   type="text"
                   className="save-search-input"
                   placeholder="Search name…"
                   value={saveName}
                   onChange={e => setSaveName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.stopPropagation(); commitSaveSearch() }
+                    if (e.key === 'Escape') setShowSaveForm(false)
+                  }}
                   autoFocus
-                  required
                 />
-                <button type="submit" className="btn-act save-search-confirm">Save</button>
+                <button type="button" className="btn-act save-search-confirm" onClick={commitSaveSearch}>Save</button>
                 <button type="button" className="save-search-cancel" onClick={() => setShowSaveForm(false)}>✕</button>
-              </form>
+              </div>
             ) : (
               <button type="button" className="save-search-btn" onClick={() => setShowSaveForm(true)}>
                 Save search

@@ -50,6 +50,8 @@
 }
 
 .sidebar-section-label {
+  display: flex;
+  align-items: center;
   font-size: 10px;
   font-weight: 500;
   color: var(--text-faint);
@@ -87,6 +89,33 @@
   font-size: 11px;
 }
 
+/* Count badge next to Saved Jobs */
+.sidebar-item-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-count {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-weight: 500;
+  background: var(--elevated);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+/* Saved-search items rendered as buttons (same look as links) */
+.sidebar-item-btn {
+  display: block;
+  width: calc(100% - 8px);
+  text-align: left;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .sidebar-pipeline-row {
   display: flex;
   align-items: center;
@@ -94,6 +123,20 @@
   padding: 4px 12px;
   margin: 0 4px;
   border-radius: 4px;
+}
+
+/* Pipeline rows are now buttons */
+.sidebar-pipeline-btn {
+  width: calc(100% - 8px);
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sidebar-pipeline-btn:hover {
+  background: var(--elevated);
 }
 
 .sidebar-pipeline-dot {

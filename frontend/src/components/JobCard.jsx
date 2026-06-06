@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { addJobToTracker, updateTrackerEntry, emailJob } from '../api/client'
 import './JobCard.css'
 
+// Consumed by: HomePage, SavedPage, DismissedPage
 const TRACKER_STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected']
 
 function StarIcon({ filled }) {
@@ -43,18 +44,19 @@ function isStaleDate(postedAt) {
 }
 
 export default function JobCard({ job, onStatusChange, isExpanded = false, onExpand = () => {} }) {
-  const [trackStatus, setTrackStatus]       = useState('Found')
-  const [trackNotes, setTrackNotes]         = useState('')
-  const [tracked, setTracked]               = useState(false)
-  const [tracking, setTracking]             = useState(false)
-  const [showEmail, setShowEmail]           = useState(false)
-  const [emailAddr, setEmailAddr]           = useState('')
-  const [emailState, setEmailState]         = useState('idle')
-  const [emailError, setEmailError]         = useState('')
+  const [trackStatus, setTrackStatus]   = useState('Found')
+  const [trackNotes, setTrackNotes]     = useState('')
+  const [tracked, setTracked]           = useState(false)
+  const [tracking, setTracking]         = useState(false)
+  const [showEmail, setShowEmail]       = useState(false)
+  const [emailAddr, setEmailAddr]       = useState('')
+  const [emailState, setEmailState]     = useState('idle')
+  const [emailError, setEmailError]     = useState('')
 
-  const stale      = isStaleDate(job.posted_at)
-  const age        = getAge(job.posted_at)
+  const stale        = isStaleDate(job.posted_at)
+  const age          = getAge(job.posted_at)
   const extraSources = (job.sources || []).filter(s => s !== job.source)
+  const isDismissed  = job.status === 'dismissed'
 
   const hasSalary = job.salary_min > 0
   const salaryText = hasSalary
@@ -74,6 +76,12 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
   function handleDismiss(e) {
     e.stopPropagation()
     onStatusChange(job.id, 'dismissed')
+  }
+
+  // Undo dismiss — restores the job back to 'new'; parent removes it from the dismissed view
+  function handleUndo(e) {
+    e.stopPropagation()
+    onStatusChange(job.id, 'new')
   }
 
   async function handleTrack(e) {
@@ -114,15 +122,16 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
 
   return (
     <article
-      className={`job-card${stale ? ' job-card-stale' : ''}${isExpanded ? ' job-card-open' : ''}`}
+      className={`job-card${stale ? ' job-card-stale' : ''}${isExpanded ? ' job-card-open' : ''}${isDismissed ? ' job-card-dismissed' : ''}`}
       onClick={handleCardClick}
     >
       {/* ── Collapsed header ──────────────────────────────────── */}
       <div className="job-card-main">
-        {/* Star */}
+        {/* Star — disabled while in dismissed state */}
         <button
           className={`btn-star${job.status === 'saved' ? ' star-saved' : ''}`}
           onClick={handleStar}
+          disabled={isDismissed}
           title={job.status === 'saved' ? 'Unsave' : 'Save'}
         >
           <StarIcon filled={job.status === 'saved'} />
@@ -150,7 +159,7 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
           <div className="job-tags">
             {stale && <span className="tag-chip tag-stale">Stale</span>}
             {job.status === 'saved' && <span className="tag-chip tag-saved">Saved</span>}
-            {job.status === 'dismissed' && <span className="tag-chip tag-dismissed">Dismissed</span>}
+            {isDismissed && <span className="tag-chip tag-dismissed">Dismissed</span>}
           </div>
 
           {job.description_snippet && (
@@ -158,124 +167,128 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
           )}
         </div>
 
-        {/* Right */}
+        {/* Right — dismiss or undo */}
         <div className="job-right">
-          <button
-            className="btn-act btn-dismiss-quick"
-            disabled={job.status === 'dismissed'}
-            onClick={handleDismiss}
-          >
-            Dismiss
-          </button>
+          {isDismissed ? (
+            <button className="btn-act btn-undo-dismiss" onClick={handleUndo}>
+              Undo
+            </button>
+          ) : (
+            <button className="btn-act btn-dismiss-quick" onClick={handleDismiss}>
+              Dismiss
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── Expanded content ──────────────────────────────────── */}
-      <div className={`job-expanded${isExpanded ? ' job-expanded-open' : ''}`}>
-        <div className="job-expanded-inner">
-          <div className="expanded-divider" />
+      {!isDismissed && (
+        <div className={`job-expanded${isExpanded ? ' job-expanded-open' : ''}`}>
+          <div className="job-expanded-inner">
+            <div className="expanded-divider" />
 
-          {/* Full description */}
-          {job.description_snippet && (
-            <div className="expanded-section">
-              <p className="expanded-description">{job.description_snippet}</p>
+            {/* Full description */}
+            {job.description_snippet && (
+              <div className="expanded-section">
+                <p className="expanded-description">{job.description_snippet}</p>
+              </div>
+            )}
+
+            {/* Detail grid */}
+            <div className="expanded-details">
+              {job.company  && <div className="detail-pair"><span className="detail-label">Company</span><span className="detail-val">{job.company}</span></div>}
+              {job.location && <div className="detail-pair"><span className="detail-label">Location</span><span className="detail-val">{job.location}{job.remote ? ' (Remote)' : ''}</span></div>}
+              <div className="detail-pair">
+                <span className="detail-label">Salary</span>
+                <span className={`detail-val${hasSalary ? ' detail-salary' : ' detail-muted'}`}>
+                  {hasSalary ? salaryText : 'Not listed'}
+                </span>
+              </div>
+              {age && <div className="detail-pair"><span className="detail-label">Posted</span><span className="detail-val">{age}</span></div>}
+              <div className="detail-pair"><span className="detail-label">Source</span><span className="detail-val" style={{textTransform:'capitalize'}}>{[job.source, ...extraSources].join(', ')}</span></div>
             </div>
-          )}
 
-          {/* Detail grid */}
-          <div className="expanded-details">
-            {job.company  && <div className="detail-pair"><span className="detail-label">Company</span><span className="detail-val">{job.company}</span></div>}
-            {job.location && <div className="detail-pair"><span className="detail-label">Location</span><span className="detail-val">{job.location}{job.remote ? ' (Remote)' : ''}</span></div>}
-            <div className="detail-pair">
-              <span className="detail-label">Salary</span>
-              <span className={`detail-val${hasSalary ? ' detail-salary' : ' detail-muted'}`}>
-                {hasSalary ? salaryText : 'Not listed'}
-              </span>
+            {/* Actions */}
+            <div className="expanded-actions">
+              <a className="btn-act btn-apply" href={job.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                Apply ↗
+              </a>
+              <button
+                className={`btn-act btn-star-act${job.status === 'saved' ? ' saved' : ''}`}
+                onClick={handleStar}
+              >
+                <StarIcon filled={job.status === 'saved'} />
+                {job.status === 'saved' ? 'Saved' : 'Save'}
+              </button>
+              <button
+                className="btn-act btn-email-toggle"
+                onClick={e => { e.stopPropagation(); setShowEmail(v => !v); setEmailState('idle'); setEmailError('') }}
+              >
+                Email
+              </button>
             </div>
-            {age && <div className="detail-pair"><span className="detail-label">Posted</span><span className="detail-val">{age}</span></div>}
-            <div className="detail-pair"><span className="detail-label">Source</span><span className="detail-val" style={{textTransform:'capitalize'}}>{[job.source, ...extraSources].join(', ')}</span></div>
-          </div>
 
-          {/* Actions */}
-          <div className="expanded-actions">
-            <a className="btn-act btn-apply" href={job.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-              Apply ↗
-            </a>
-            <button
-              className={`btn-act btn-star-act${job.status === 'saved' ? ' saved' : ''}`}
-              onClick={handleStar}
-            >
-              <StarIcon filled={job.status === 'saved'} />
-              {job.status === 'saved' ? 'Saved' : 'Save'}
-            </button>
-            <button
-              className="btn-act btn-email-toggle"
-              onClick={e => { e.stopPropagation(); setShowEmail(v => !v); setEmailState('idle'); setEmailError('') }}
-            >
-              Email
-            </button>
-          </div>
+            {/* Email popover */}
+            {showEmail && (
+              <form className="email-popover" onSubmit={handleSendEmail} onClick={e => e.stopPropagation()}>
+                {emailState === 'sent' ? (
+                  <span className="email-sent">Sent!</span>
+                ) : (
+                  <>
+                    <input
+                      type="email"
+                      className="email-input"
+                      placeholder="you@example.com"
+                      value={emailAddr}
+                      onChange={e => setEmailAddr(e.target.value)}
+                      autoFocus
+                      required
+                    />
+                    <button type="submit" className="btn-act btn-email-send" disabled={emailState === 'sending'}>
+                      {emailState === 'sending' ? 'Sending…' : 'Send'}
+                    </button>
+                    <button type="button" className="btn-act" onClick={() => setShowEmail(false)}>✕</button>
+                  </>
+                )}
+                {emailState === 'error' && <span className="email-error">{emailError}</span>}
+              </form>
+            )}
 
-          {/* Email popover */}
-          {showEmail && (
-            <form className="email-popover" onSubmit={handleSendEmail} onClick={e => e.stopPropagation()}>
-              {emailState === 'sent' ? (
-                <span className="email-sent">Sent!</span>
-              ) : (
-                <>
-                  <input
-                    type="email"
-                    className="email-input"
-                    placeholder="you@example.com"
-                    value={emailAddr}
-                    onChange={e => setEmailAddr(e.target.value)}
-                    autoFocus
-                    required
-                  />
-                  <button type="submit" className="btn-act btn-email-send" disabled={emailState === 'sending'}>
-                    {emailState === 'sending' ? 'Sending…' : 'Send'}
-                  </button>
-                  <button type="button" className="btn-act" onClick={() => setShowEmail(false)}>✕</button>
-                </>
-              )}
-              {emailState === 'error' && <span className="email-error">{emailError}</span>}
-            </form>
-          )}
+            {/* Tracker section */}
+            <div className="expanded-tracker" onClick={e => e.stopPropagation()}>
+              <span className="expanded-tracker-label">Add to Tracker</span>
+              <select
+                className="tracker-status-select"
+                value={trackStatus}
+                onChange={e => setTrackStatus(e.target.value)}
+                disabled={tracked}
+              >
+                {TRACKER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <textarea
+                className="tracker-notes-input"
+                placeholder="Notes (optional)…"
+                value={trackNotes}
+                onChange={e => setTrackNotes(e.target.value)}
+                rows={2}
+                disabled={tracked}
+              />
+              <button
+                className={`btn-act btn-track-expanded${tracked ? ' tracked' : ''}`}
+                onClick={handleTrack}
+                disabled={tracked || tracking}
+              >
+                {tracked ? '✓ In Tracker' : tracking ? 'Adding…' : '+ Add to Tracker'}
+              </button>
+            </div>
 
-          {/* Tracker section */}
-          <div className="expanded-tracker" onClick={e => e.stopPropagation()}>
-            <span className="expanded-tracker-label">Add to Tracker</span>
-            <select
-              className="tracker-status-select"
-              value={trackStatus}
-              onChange={e => setTrackStatus(e.target.value)}
-              disabled={tracked}
-            >
-              {TRACKER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <textarea
-              className="tracker-notes-input"
-              placeholder="Notes (optional)…"
-              value={trackNotes}
-              onChange={e => setTrackNotes(e.target.value)}
-              rows={2}
-              disabled={tracked}
-            />
-            <button
-              className={`btn-act btn-track-expanded${tracked ? ' tracked' : ''}`}
-              onClick={handleTrack}
-              disabled={tracked || tracking}
-            >
-              {tracked ? '✓ In Tracker' : tracking ? 'Adding…' : '+ Add to Tracker'}
+            {/* Collapse chevron */}
+            <button className="btn-collapse" onClick={e => { e.stopPropagation(); onExpand(job.id) }}>
+              <ChevronUpIcon />
             </button>
           </div>
-
-          {/* Collapse chevron */}
-          <button className="btn-collapse" onClick={e => { e.stopPropagation(); onExpand(job.id) }}>
-            <ChevronUpIcon />
-          </button>
         </div>
-      </div>
+      )}
     </article>
   )
 }

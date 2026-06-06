@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   getTrackerEntries, addTrackerEntry, updateTrackerEntry, deleteTrackerEntry,
   reorderTrackerEntries,
 } from '../api/client'
+import InfoTooltip from '../components/InfoTooltip'
 import './TrackerPage.css'
 
 const STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected', 'Dismissed']
@@ -177,16 +179,26 @@ function AddModal({ onAdd, onClose }) {
 }
 
 export default function TrackerPage() {
+  const location = useLocation()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [expanded, setExpanded] = useState(new Set())
   const [filterTag, setFilterTag] = useState(null)
-  const [filterStatus, setFilterStatus] = useState('active') // 'active' | status | null (all)
+  // Sidebar pipeline clicks pass filterStatus via router state; default to 'active'
+  const [filterStatus, setFilterStatus] = useState(() => location.state?.filterStatus || 'active')
 
   useEffect(() => {
     getTrackerEntries().then(setEntries).finally(() => setLoading(false))
   }, [])
+
+  // Apply filter from sidebar navigation (e.g. clicking a pipeline status)
+  useEffect(() => {
+    if (location.state?.filterStatus) {
+      setFilterStatus(location.state.filterStatus)
+      window.history.replaceState({}, '')
+    }
+  }, [location.state?.filterStatus])
 
   const allTags = [...new Set(entries.flatMap(e => e.tags || []))]
 
@@ -297,10 +309,10 @@ export default function TrackerPage() {
                 <th className="col-controls"></th>
                 <th>Job Title</th>
                 <th>Company</th>
-                <th>Status</th>
-                <th>Deadline</th>
-                <th>Tags</th>
-                <th>Follow-up</th>
+                <th>Status<InfoTooltip text="Track where you are in the process. Pipeline counts in the sidebar reflect these statuses." /></th>
+                <th>Deadline<InfoTooltip text="Application deadline. Overdue dates are highlighted in red." /></th>
+                <th>Tags<InfoTooltip text="Custom labels. Press Enter or comma to add a tag. Click × to remove." /></th>
+                <th>Follow-up<InfoTooltip text="Date to follow up with the recruiter. Overdue follow-ups appear in the digest email." /></th>
                 <th>Notes</th>
                 <th></th>
               </tr>
