@@ -4,9 +4,10 @@ import { getDismissedJobs, updateJobStatus } from '../api/client'
 import './DismissedPage.css'
 
 export default function DismissedPage() {
-  const [jobs, setJobs]       = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+  const [jobs, setJobs]              = useState([])
+  const [loading, setLoading]        = useState(true)
+  const [error, setError]            = useState(null)
+  const [expandedJobId, setExpanded] = useState(null)
 
   useEffect(() => {
     getDismissedJobs()
@@ -49,7 +50,13 @@ export default function DismissedPage() {
       {jobs.length > 0 && (
         <div className="job-list">
           {jobs.map(job => (
-            <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} />
+            <JobCard
+              key={job.id}
+              job={job}
+              onStatusChange={handleStatusChange}
+              isExpanded={expandedJobId === job.id}
+              onExpand={id => setExpanded(prev => prev === id ? null : id)}
+            />
           ))}
         </div>
       )}

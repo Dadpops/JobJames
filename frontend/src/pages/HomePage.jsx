@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SearchForm from '../components/SearchForm'
 import JobCard from '../components/JobCard'
 import StatCards from '../components/StatCards'
-import { searchJobs, updateJobStatus, createSavedSearch } from '../api/client'
+import { searchJobs, updateJobStatus, createSavedSearch, getTrackerEntries } from '../api/client'
 import './HomePage.css'
 
 function isStaleJob(job) {
@@ -12,17 +12,35 @@ function isStaleJob(job) {
   return (Date.now() - posted.getTime()) > 30 * 86400000
 }
 
+function countOverdueFollowups(entries) {
+  const today = new Date().toISOString().slice(0, 10)
+  return entries.filter(e =>
+    e.status !== 'Dismissed' &&
+    e.followup_date &&
+    e.followup_date < today
+  ).length
+}
+
 export default function HomePage() {
-  const [jobs, setJobs]           = useState([])
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState(null)
-  const [searched, setSearched]   = useState(false)
-  const [lastCriteria, setLast]   = useState(null)
-  const [hideStale, setHideStale] = useState(false)
+  const [jobs, setJobs]               = useState([])
+  const [loading, setLoading]         = useState(false)
+  const [error, setError]             = useState(null)
+  const [searched, setSearched]       = useState(false)
+  const [lastCriteria, setLast]       = useState(null)
+  const [hideStale, setHideStale]     = useState(false)
+  const [expandedJobId, setExpanded]  = useState(null)
+  const [followupsDue, setFollowups]  = useState(null)
+
+  useEffect(() => {
+    getTrackerEntries()
+      .then(entries => setFollowups(countOverdueFollowups(entries)))
+      .catch(() => setFollowups(0))
+  }, [])
 
   async function handleSearch(criteria) {
     setLoading(true)
     setError(null)
+    setExpanded(null)
     try {
       const results = await searchJobs(criteria)
       setJobs(results)
@@ -43,7 +61,7 @@ export default function HomePage() {
         schedule: 'off',
       })
     } catch {
-      // silent — SearchForm manages its own UI
+      // silent
     }
   }
 
@@ -52,12 +70,17 @@ export default function HomePage() {
       const updated = await updateJobStatus(jobId, status)
       if (status === 'dismissed') {
         setJobs(prev => prev.filter(j => j.id !== jobId))
+        if (expandedJobId === jobId) setExpanded(null)
       } else {
         setJobs(prev => prev.map(j => (j.id === updated.id ? updated : j)))
       }
     } catch (err) {
       console.error('Status update failed', err)
     }
+  }
+
+  function handleExpand(jobId) {
+    setExpanded(prev => (prev === jobId ? null : jobId))
   }
 
   const displayJobs = hideStale ? jobs.filter(j => !isStaleJob(j)) : jobs
@@ -88,10 +111,16 @@ export default function HomePage() {
 
       {!loading && jobs.length > 0 && (
         <div className="results">
-          <StatCards jobs={jobs} />
+          <StatCards jobs={jobs} followupsDue={followupsDue} />
           <div className="job-list">
             {displayJobs.map(job => (
-              <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} />
+              <JobCard
+                key={job.id}
+                job={job}
+                onStatusChange={handleStatusChange}
+                isExpanded={expandedJobId === job.id}
+                onExpand={handleExpand}
+              />
             ))}
           </div>
         </div>

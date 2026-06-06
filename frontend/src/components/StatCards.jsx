@@ -1,12 +1,10 @@
 import './StatCards.css'
 
-export default function StatCards({ jobs }) {
-  const total   = jobs.length
-  const remote  = jobs.filter(j => j.remote).length
-  const saved   = jobs.filter(j => j.status === 'saved').length
-  const avgScore = total > 0
-    ? Math.round(jobs.reduce((s, j) => s + (j.score || 0), 0) / total)
-    : 0
+export default function StatCards({ jobs, followupsDue }) {
+  const total  = jobs.length
+  const remote = jobs.filter(j => j.remote).length
+  const saved  = jobs.filter(j => j.status === 'saved').length
+  const overdue = followupsDue > 0
 
   return (
     <div className="stat-cards">
@@ -22,11 +20,13 @@ export default function StatCards({ jobs }) {
         <span className="stat-value stat-value-green">{saved}</span>
         <span className="stat-label">Saved</span>
       </div>
-      <div className="stat-card">
-        <span className={`stat-value ${avgScore >= 80 ? 'stat-value-green' : avgScore >= 60 ? 'stat-value-amber' : 'stat-value-faint'}`}>
-          {avgScore}
+      <div className={`stat-card${overdue ? ' stat-card-alert' : ''}`}>
+        <span className={`stat-value${overdue ? ' stat-value-red' : ' stat-value-faint'}`}>
+          {followupsDue ?? '—'}
         </span>
-        <span className="stat-label">Avg Score</span>
+        <span className="stat-label">
+          Follow-ups Due{overdue ? ' ⚠' : ''}
+        </span>
       </div>
     </div>
   )
