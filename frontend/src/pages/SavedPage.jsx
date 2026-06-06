@@ -4,9 +4,10 @@ import { getSavedJobs, updateJobStatus, emailSavedJobs } from '../api/client'
 import './SavedPage.css'
 
 export default function SavedPage() {
-  const [jobs, setJobs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [jobs, setJobs]             = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
+  const [expandedJobId, setExpanded] = useState(null)
 
   const [emailTo, setEmailTo] = useState('')
   const [emailState, setEmailState] = useState('idle') // idle | sending | sent | error
@@ -96,7 +97,13 @@ export default function SavedPage() {
       {jobs.length > 0 && (
         <div className="job-list">
           {jobs.map(job => (
-            <JobCard key={job.id} job={job} onStatusChange={handleStatusChange} />
+            <JobCard
+              key={job.id}
+              job={job}
+              onStatusChange={handleStatusChange}
+              isExpanded={expandedJobId === job.id}
+              onExpand={id => setExpanded(prev => prev === id ? null : id)}
+            />
           ))}
         </div>
       )}

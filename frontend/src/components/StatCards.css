@@ -26,6 +26,12 @@
 .stat-value-green  { color: var(--green); }
 .stat-value-amber  { color: var(--amber); }
 .stat-value-faint  { color: var(--text-faint); }
+.stat-value-red    { color: var(--red); }
+
+.stat-card-alert {
+  border-color: #3a1820;
+  background: #1a0e10;
+}
 
 .stat-label {
   font-size: 10px;
