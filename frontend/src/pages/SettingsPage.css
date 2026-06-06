@@ -339,3 +339,90 @@
   transition: color 0.15s;
 }
 .btn-del:hover { color: var(--red); }
+
+/* ── Edit search button ── */
+.btn-edit-search {
+  background: transparent;
+  border: 0.5px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  padding: 2px 7px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-edit-search:hover { color: var(--accent-muted); border-color: var(--accent); }
+
+/* ── Expandable criteria rows ── */
+.criteria-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.criteria-expand-arrow {
+  font-size: 8px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.search-row-expanded td {
+  background: rgba(110, 106, 240, 0.04);
+}
+
+.search-row-detail td {
+  background: rgba(110, 106, 240, 0.04);
+  border-top: none;
+  padding: 0 10px 10px;
+}
+
+.criteria-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.criteria-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.criteria-detail-label {
+  font-size: 9px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.criteria-detail-val {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Search name inline rename ── */
+.search-name-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.search-name-edit-hint {
+  font-size: 9px;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.search-name-inline:hover .search-name-edit-hint { opacity: 1; }
+
+.search-criteria-cell { min-width: 180px; }

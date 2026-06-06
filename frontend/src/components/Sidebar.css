@@ -157,3 +157,89 @@
   color: var(--text-faint);
   font-weight: 500;
 }
+
+/* ── Saved count badge ── */
+.sidebar-item-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--accent-muted);
+  background: #1a1929;
+  border: 0.5px solid #4a47a3;
+  border-radius: 8px;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ── Pipeline button ── */
+.sidebar-pipeline-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sidebar-pipeline-btn:hover {
+  background: var(--elevated);
+  border-radius: 4px;
+}
+
+/* ── Search item with inline rename ── */
+.sidebar-search-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 4px;
+  position: relative;
+}
+
+.sidebar-search-item .sidebar-item {
+  flex: 1;
+  margin: 0;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.sidebar-search-run {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sidebar-rename-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  padding: 4px 5px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-search-item:hover .sidebar-rename-btn { opacity: 1; }
+.sidebar-rename-btn:hover { color: var(--text-muted); }
+
+.sidebar-rename-input {
+  flex: 1;
+  background: var(--bg);
+  border: 0.5px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 3px 7px;
+  outline: none;
+  width: 100%;
+}
