@@ -149,6 +149,88 @@ Vite proxies `/api/*` to `localhost:8000` so no CORS configuration is needed dur
 
 ---
 
+## Deployment (Railway)
+
+JobJames runs as two Railway services — one for the FastAPI backend and one for the React frontend.
+
+### Prerequisites
+
+- A [Railway](https://railway.app) account
+- Your repo pushed to GitHub
+
+### Step-by-step
+
+**1. Create a new Railway project**
+
+Go to [railway.app/new](https://railway.app/new) → "Deploy from GitHub repo" → select your `JobJames` fork.
+
+**2. Add the Backend service**
+
+- Click **+ New Service** → GitHub Repo → select `JobJames`
+- Set the **Root Directory** to `backend/`
+- Railway detects `railway.toml` and uses Nixpacks with `pip install -r requirements.txt`
+
+Add these environment variables in the backend service settings:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `/data/jobjames.db` (with volume) or `jobjames.db` (ephemeral) |
+| `ALLOWED_ORIGINS` | `["https://your-frontend.up.railway.app"]` |
+| `RESEND_API_KEY` | Your Resend key (for email features) |
+| `EMAIL_FROM` | `JobJames <noreply@yourdomain.com>` |
+| `LINKEDIN_EMAIL` | _(optional)_ |
+| `LINKEDIN_PASSWORD` | _(optional)_ |
+| `GREENHOUSE_COMPANIES` | _(optional)_ comma-separated tokens |
+| `LEVER_COMPANIES` | _(optional)_ comma-separated slugs |
+
+> **Database persistence:** SQLite is ephemeral on Railway by default — data is lost on redeploy.
+> To persist data, add a **Volume** in Railway: mount path `/data`, then set `DATABASE_URL=/data/jobjames.db`.
+> A future Phase 5 migration will replace aiosqlite with SQLAlchemy + PostgreSQL for fully managed persistence.
+
+**3. Add the Frontend service**
+
+- Click **+ New Service** → GitHub Repo → select `JobJames`
+- Set the **Root Directory** to `frontend/`
+- Railway uses the `Dockerfile` (multi-stage Node → nginx build)
+
+Add this environment variable (required — baked into the build):
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | The backend Railway URL, e.g. `https://jobjames-backend.up.railway.app` |
+
+**4. Generate a domain for the frontend**
+
+In the frontend service → **Settings** → **Networking** → **Generate Domain**.
+Copy the URL (e.g. `https://jobjames-frontend.up.railway.app`).
+
+**5. Update backend CORS**
+
+Back in the backend service, update `ALLOWED_ORIGINS` to include the frontend domain:
+```
+ALLOWED_ORIGINS=["https://jobjames-frontend.up.railway.app"]
+```
+
+**6. Deploy**
+
+Both services deploy automatically on git push. Monitor logs in the Railway dashboard.
+
+### Local production testing (Docker)
+
+Test the production Docker images locally before deploying:
+
+```bash
+# Copy and fill in backend env vars
+cp backend/.env.example backend/.env
+
+# Build and start both services
+docker-compose up --build
+
+# Frontend at http://localhost  |  Backend API at http://localhost:8000/docs
+```
+
+---
+
 ## API reference
 
 ### Jobs

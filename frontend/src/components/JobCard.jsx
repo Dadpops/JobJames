@@ -4,15 +4,6 @@ import './JobCard.css'
 
 const TRACKER_STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected']
 
-const BREAKDOWN_LABELS = {
-  title_match:      'Title match',
-  remote_bonus:     'Remote match',
-  remote_penalty:   'Remote penalty',
-  salary_min_match: 'Salary min',
-  salary_max_match: 'Salary max',
-  location_match:   'Location match',
-}
-
 function StarIcon({ filled }) {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24"
@@ -34,23 +25,6 @@ function ChevronUpIcon() {
   )
 }
 
-function ScoreBadge({ score, breakdown, showBreakdown, onToggle }) {
-  const s = Math.round(score)
-  let cls = 'score-gray'
-  if (s >= 80) cls = 'score-green'
-  else if (s >= 60) cls = 'score-amber'
-  const hasBreakdown = Object.keys(breakdown || {}).length > 0
-  return (
-    <button
-      className={`score-badge-btn${hasBreakdown ? ' score-clickable' : ''}`}
-      onClick={e => { e.stopPropagation(); hasBreakdown && onToggle() }}
-      title={hasBreakdown ? 'Score breakdown' : 'Match score'}
-    >
-      <span className={`score-badge ${cls}`}>{s}</span>
-    </button>
-  )
-}
-
 function getAge(postedAt) {
   if (!postedAt) return null
   const posted = new Date(postedAt)
@@ -69,7 +43,6 @@ function isStaleDate(postedAt) {
 }
 
 export default function JobCard({ job, onStatusChange, isExpanded = false, onExpand = () => {} }) {
-  const [showBreakdown, setShowBreakdown]   = useState(false)
   const [trackStatus, setTrackStatus]       = useState('Found')
   const [trackNotes, setTrackNotes]         = useState('')
   const [tracked, setTracked]               = useState(false)
@@ -81,7 +54,6 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
 
   const stale      = isStaleDate(job.posted_at)
   const age        = getAge(job.posted_at)
-  const breakdown  = job.score_breakdown || {}
   const extraSources = (job.sources || []).filter(s => s !== job.source)
 
   const hasSalary = job.salary_min > 0
@@ -188,12 +160,6 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
 
         {/* Right */}
         <div className="job-right">
-          <ScoreBadge
-            score={job.score}
-            breakdown={breakdown}
-            showBreakdown={showBreakdown}
-            onToggle={() => setShowBreakdown(v => !v)}
-          />
           <button
             className="btn-act btn-dismiss-quick"
             disabled={job.status === 'dismissed'}
@@ -203,18 +169,6 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
           </button>
         </div>
       </div>
-
-      {/* Score breakdown (toggled) */}
-      {showBreakdown && Object.keys(breakdown).length > 0 && (
-        <ul className="score-breakdown" onClick={e => e.stopPropagation()}>
-          {Object.entries(breakdown).map(([k, v]) => (
-            <li key={k} className={v < 0 ? 'bd-neg' : 'bd-pos'}>
-              <span>{BREAKDOWN_LABELS[k] || k}</span>
-              <span>{v > 0 ? '+' : ''}{v}</span>
-            </li>
-          ))}
-        </ul>
-      )}
 
       {/* ── Expanded content ──────────────────────────────────── */}
       <div className={`job-expanded${isExpanded ? ' job-expanded-open' : ''}`}>

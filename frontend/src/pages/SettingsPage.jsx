@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   getSettings, saveSettings,
   getSavedSearches, updateSavedSearch, deleteSavedSearch, runSavedSearch,
+  API_BASE,
 } from '../api/client'
 import './SettingsPage.css'
 
@@ -80,7 +81,7 @@ export default function SettingsPage() {
       await saveSettings(cfg)
       const to = cfg.digest_to || prompt('Send test email to:')
       if (!to) { setTestState('idle'); return }
-      const res = await fetch('/api/jobs/email', {
+      const res = await fetch(`${API_BASE}/jobs/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to }),

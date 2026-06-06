@@ -1,4 +1,10 @@
-const BASE = '/api'
+// In development Vite proxies /api to localhost:8000 (vite.config.js).
+// In production set VITE_API_URL to the backend Railway URL at build time.
+export const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api'
+
+const BASE = API_BASE
 
 export async function searchJobs(criteria) {
   const res = await fetch(`${BASE}/jobs/search`, {
