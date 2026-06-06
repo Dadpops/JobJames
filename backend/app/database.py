@@ -1,8 +1,11 @@
 """SQLite persistence layer."""
 import json
+import os
 import aiosqlite
 
-DB_PATH = "jobjames.db"
+# DATABASE_URL can be a plain path or a sqlite:/// URI; strip the scheme if present.
+_raw = os.getenv("DATABASE_URL", "jobjames.db")
+DB_PATH = _raw[len("sqlite:///"):] if _raw.startswith("sqlite:///") else _raw
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
