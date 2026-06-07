@@ -68,7 +68,7 @@ async def email_saved_jobs(
         f'<h1 style="color:#6c8ef7;margin-bottom:4px;">JobJames — Saved Listings</h1>'
         f'<p style="color:#7a7e9a;margin-bottom:24px;">{len(jobs)} saved job{"s" if len(jobs) != 1 else ""}</p>'
     )
-    await send_email(req.to, f"JobJames — {len(jobs)} saved listing{'s' if len(jobs) != 1 else ''}", _wrap(heading, jobs))
+    await send_email(req.to, f"JobJames — {len(jobs)} saved listing{'s' if len(jobs) != 1 else ''}", _wrap(heading, jobs), access_code)
     return {"sent": len(jobs), "to": req.to}
 
 
@@ -85,5 +85,5 @@ async def email_single_job(
         f'<h1 style="color:#6c8ef7;margin-bottom:4px;">JobJames — Job Listing</h1>'
         f'<p style="color:#7a7e9a;margin-bottom:24px;">{job["title"]} at {job["company"]}</p>'
     )
-    await send_email(req.to, f"JobJames — {job['title']} at {job['company']}", _wrap(heading, [job]))
+    await send_email(req.to, f"JobJames — {job['title']} at {job['company']}", _wrap(heading, [job]), access_code)
     return {"sent": 1, "to": req.to}

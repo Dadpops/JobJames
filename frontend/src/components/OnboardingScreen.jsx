@@ -1,21 +1,26 @@
 import { useState } from 'react'
-import { API_BASE, login, register } from '../api/client'
+import { login, recoverCode, register } from '../api/client'
 import './OnboardingScreen.css'
 
 export default function OnboardingScreen({ onComplete }) {
+  const [view, setView]       = useState('main')   // 'main' | 'recover' | 'recover-sent'
   const [name, setName]       = useState('')
+  const [email, setEmail]     = useState('')
   const [code, setCode]       = useState('')
+  const [recoverEmail, setRecoverEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
   const [newCode, setNewCode] = useState('')
+
+  const isLogin = code.trim().length > 0
 
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      if (!code.trim()) {
-        const data = await register(name.trim())
+      if (!isLogin) {
+        const data = await register(name.trim(), email.trim())
         localStorage.setItem('jj_access_code', data.access_code)
         if (name.trim()) localStorage.setItem('jobjames_display_name', name.trim())
         setNewCode(data.access_code)
@@ -33,10 +38,25 @@ export default function OnboardingScreen({ onComplete }) {
     }
   }
 
+  async function handleRecover(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await recoverCode(recoverEmail.trim())
+      setView('recover-sent')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function handleConfirmed() {
     onComplete(newCode, name.trim())
   }
 
+  // ── Code-reveal screen ────────────────────────────────────────────────────────
   if (newCode) {
     return (
       <div className="onboarding-screen">
@@ -58,6 +78,62 @@ export default function OnboardingScreen({ onComplete }) {
     )
   }
 
+  // ── Recovery sent confirmation ─────────────────────────────────────────────
+  if (view === 'recover-sent') {
+    return (
+      <div className="onboarding-screen">
+        <div className="onboarding-card">
+          <div className="onboarding-logo">JJ</div>
+          <h1 className="onboarding-title">Check your inbox</h1>
+          <p className="onboarding-body">
+            If <strong>{recoverEmail}</strong> is registered, we've sent your access code there.
+          </p>
+          <button className="onboarding-btn" onClick={() => { setView('main'); setRecoverEmail('') }}>
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Recovery email form ───────────────────────────────────────────────────
+  if (view === 'recover') {
+    return (
+      <div className="onboarding-screen">
+        <div className="onboarding-card">
+          <div className="onboarding-logo">JJ</div>
+          <h1 className="onboarding-title">Recover your code</h1>
+          <p className="onboarding-body">
+            Enter the email you used when creating your account. We'll send your access code to that address.
+          </p>
+          <form onSubmit={handleRecover} className="onboarding-form">
+            <div className="onboarding-field">
+              <label className="onboarding-label" htmlFor="ob-recover-email">Email address</label>
+              <input
+                id="ob-recover-email"
+                type="email"
+                value={recoverEmail}
+                onChange={e => setRecoverEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="onboarding-input"
+                autoFocus
+                required
+              />
+            </div>
+            {error && <p className="onboarding-error">{error}</p>}
+            <button type="submit" className="onboarding-btn" disabled={loading || !recoverEmail.trim()}>
+              {loading ? 'Sending…' : 'Send recovery email'}
+            </button>
+          </form>
+          <button className="onboarding-link" onClick={() => { setView('main'); setError('') }}>
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Main form ─────────────────────────────────────────────────────────────
   return (
     <div className="onboarding-screen">
       <div className="onboarding-card">
@@ -79,6 +155,24 @@ export default function OnboardingScreen({ onComplete }) {
             />
           </div>
 
+          {!isLogin && (
+            <div className="onboarding-field">
+              <label className="onboarding-label" htmlFor="ob-email">
+                Email
+                <span className="onboarding-optional"> — optional, for account recovery</span>
+              </label>
+              <input
+                id="ob-email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="onboarding-input"
+                autoComplete="email"
+              />
+            </div>
+          )}
+
           <div className="onboarding-field">
             <label className="onboarding-label" htmlFor="ob-code">
               Access code
@@ -94,12 +188,21 @@ export default function OnboardingScreen({ onComplete }) {
               autoComplete="off"
               spellCheck={false}
             />
+            {isLogin && (
+              <button
+                type="button"
+                className="onboarding-link onboarding-link-inline"
+                onClick={() => setView('recover')}
+              >
+                Forgot your code?
+              </button>
+            )}
           </div>
 
           {error && <p className="onboarding-error">{error}</p>}
 
           <button type="submit" className="onboarding-btn" disabled={loading}>
-            {loading ? 'One moment…' : code.trim() ? 'Sign in' : 'Create account'}
+            {loading ? 'One moment…' : isLogin ? 'Sign in' : 'Create account'}
           </button>
         </form>
       </div>

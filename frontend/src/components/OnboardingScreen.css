@@ -154,3 +154,27 @@
   margin: 0;
   text-align: center;
 }
+
+/* Link-style buttons */
+.onboarding-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.85;
+}
+
+.onboarding-link:hover {
+  opacity: 1;
+}
+
+.onboarding-link-inline {
+  align-self: flex-start;
+  padding: 2px 0;
+  font-size: 12px;
+}

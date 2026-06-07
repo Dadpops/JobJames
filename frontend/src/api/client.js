@@ -37,11 +37,11 @@ async function apiFetch(url, options = {}) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-export async function register(displayName) {
+export async function register(displayName, email = '') {
   const res = await fetch(`${BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ display_name: displayName }),
+    body: JSON.stringify({ display_name: displayName, email }),
   })
   if (!res.ok) throw new Error('Registration failed')
   return res.json()
@@ -54,6 +54,16 @@ export async function login(accessCode, displayName) {
     body: JSON.stringify({ access_code: accessCode, display_name: displayName }),
   })
   if (!res.ok) throw new Error('Invalid access code — check your code and try again')
+  return res.json()
+}
+
+export async function recoverCode(email) {
+  const res = await fetch(`${BASE}/auth/recover`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw new Error('Something went wrong — please try again')
   return res.json()
 }
 

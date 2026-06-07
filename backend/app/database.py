@@ -60,6 +60,7 @@ _SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     access_code  TEXT PRIMARY KEY,
     display_name TEXT,
+    email        TEXT,
     created_at   TEXT
 );
 
@@ -139,6 +140,11 @@ async def init_db() -> None:
     async with _engine.begin() as conn:
         for stmt in statements:
             await conn.execute(text(stmt))
+        # Migration: add email column to users table (ignored if it already exists)
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT"))
+        except Exception:
+            pass
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
@@ -154,12 +160,22 @@ async def get_user(access_code: str) -> dict | None:
         return dict(row) if row else None
 
 
-async def create_user(access_code: str, display_name: str = "") -> None:
+async def create_user(access_code: str, display_name: str = "", email: str = "") -> None:
     async with _engine.begin() as conn:
         await conn.execute(
-            text("INSERT INTO users (access_code, display_name, created_at) VALUES (:code, :name, :now)"),
-            {"code": access_code, "name": display_name or None, "now": _now()},
+            text("INSERT INTO users (access_code, display_name, email, created_at) VALUES (:code, :name, :email, :now)"),
+            {"code": access_code, "name": display_name or None, "email": email or None, "now": _now()},
         )
+
+
+async def get_user_by_email(email: str) -> dict | None:
+    async with _engine.connect() as conn:
+        result = await conn.execute(
+            text("SELECT * FROM users WHERE email = :email LIMIT 1"),
+            {"email": email.strip().lower()},
+        )
+        row = result.mappings().fetchone()
+        return dict(row) if row else None
 
 
 # ── Jobs ──────────────────────────────────────────────────────────────────────

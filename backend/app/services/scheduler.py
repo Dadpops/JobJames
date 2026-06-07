@@ -50,7 +50,7 @@ async def run_saved_search(search_id: str) -> int:
         top = ranked[:limit]
         html = _build_search_results_html(row["name"], top)
         try:
-            await send_email(email_to, f"JobJames — {row['name']}", html)
+            await send_email(email_to, f"JobJames — {row['name']}", html, access_code)
             log.info("Search results emailed to %s", email_to)
         except Exception as exc:
             log.error("Search results email failed: %s", exc)
@@ -112,7 +112,7 @@ async def send_digest(access_code: str) -> None:
     overdue = await get_overdue_tracker_items(access_code)
     html = _build_digest_html(overdue)
     try:
-        await send_email(to, "JobJames — Daily Digest", html)
+        await send_email(to, "JobJames — Daily Digest", html, access_code)
         log.info("Digest sent to %s (user %s)", to, access_code)
     except Exception as exc:
         log.error("Digest send failed: %s", exc)

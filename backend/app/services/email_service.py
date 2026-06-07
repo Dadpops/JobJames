@@ -12,12 +12,27 @@ from app.database import get_setting
 RESEND_URL = "https://api.resend.com/emails"
 
 
-async def send_email(to: str, subject: str, html: str) -> None:
-    smtp_host = await get_setting("smtp_host")
+async def send_email(to: str, subject: str, html: str, access_code: str = "") -> None:
+    smtp_host = await get_setting("smtp_host", access_code) if access_code else None
     if smtp_host:
         await _send_smtp(to, subject, html, smtp_host)
     else:
         await _send_resend(to, subject, html)
+
+
+async def send_system_email(to: str, subject: str, html: str) -> None:
+    """Send a system-level email (e.g. access code recovery) via Resend. Silently skips if unconfigured."""
+    if not settings.resend_api_key:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            await client.post(
+                RESEND_URL,
+                json={"from": settings.email_from, "to": [to], "subject": subject, "html": html},
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+            )
+    except Exception:
+        pass
 
 
 async def _send_smtp(to: str, subject: str, html: str, smtp_host: str) -> None:
