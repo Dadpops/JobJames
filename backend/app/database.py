@@ -39,7 +39,11 @@ if _IS_SQLITE:
         poolclass=StaticPool,
     )
 else:
-    _engine: AsyncEngine = create_async_engine(_DB_URL, pool_pre_ping=True)
+    _engine: AsyncEngine = create_async_engine(
+        _DB_URL,
+        pool_pre_ping=True,
+        connect_args={"ssl": False, "timeout": 15},
+    )
 
 
 def _now() -> str:

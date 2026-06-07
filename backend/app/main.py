@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,13 +10,23 @@ from app.config import settings
 from app.database import init_db
 from app.services import scheduler
 
+log = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
-    await scheduler.start()
+    try:
+        await asyncio.wait_for(init_db(), timeout=30.0)
+        await scheduler.start()
+    except asyncio.TimeoutError:
+        log.error("init_db() timed out after 30s — app starting without DB initialization")
+    except Exception as exc:
+        log.error("Startup error (non-fatal): %s", exc, exc_info=True)
     yield
-    scheduler.scheduler.shutdown(wait=False)
+    try:
+        scheduler.scheduler.shutdown(wait=False)
+    except Exception:
+        pass
 
 
 app = FastAPI(title="JobJames API", version="0.3.0", lifespan=lifespan)
