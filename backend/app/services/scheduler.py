@@ -1,4 +1,4 @@
-"""APScheduler integration — runs saved searches and sends email digests."""
+"""APScheduler integration — runs saved searches and sends per-user email digests."""
 import json
 import logging
 from datetime import datetime
@@ -8,8 +8,9 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.database import (
     get_all_settings,
+    get_all_saved_searches_for_scheduler,
     get_overdue_tracker_items,
-    get_saved_searches,
+    get_saved_search_by_id,
     touch_saved_search,
     upsert_jobs,
 )
@@ -17,30 +18,29 @@ from app.database import (
 log = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
 
-_DIGEST_JOB_ID = "email_digest"
-
 
 # ── Scheduled search runner ───────────────────────────────────────────────────
 
+
 async def run_saved_search(search_id: str) -> int:
     from app.crawlers import run_crawlers
-    from app.database import get_saved_search
     from app.models.search import SearchRequest
     from app.services.deduplication import deduplicate
     from app.services.scoring import score_and_rank
     from app.api.jobs import _to_row
 
-    row = await get_saved_search(search_id)
+    row = await get_saved_search_by_id(search_id)
     if not row:
         return 0
 
+    access_code = row["access_code"]
     criteria = json.loads(row["criteria_json"])
     req = SearchRequest(**criteria)
     raw = await run_crawlers(req)
     unique = deduplicate(raw)
     ranked = score_and_rank(unique, req)
-    await upsert_jobs([_to_row(j) for j in ranked])
-    await touch_saved_search(search_id)
+    await upsert_jobs([_to_row(j) for j in ranked], access_code)
+    await touch_saved_search(search_id, access_code)
     log.info("Ran saved search '%s' — %d results", row["name"], len(ranked))
 
     email_to = (row.get("recipient_email") or "").strip()
@@ -98,22 +98,22 @@ def _build_search_results_html(search_name: str, jobs: list) -> str:
 </html>"""
 
 
-# ── Digest sender ─────────────────────────────────────────────────────────────
+# ── Per-user digest ───────────────────────────────────────────────────────────
 
-async def send_digest() -> None:
+
+async def send_digest(access_code: str) -> None:
     from app.services.email_service import send_email
 
-    cfg = await get_all_settings()
+    cfg = await get_all_settings(access_code)
     to = cfg.get("digest_to", "")
     if not to:
         return
 
-    overdue = await get_overdue_tracker_items()
-
+    overdue = await get_overdue_tracker_items(access_code)
     html = _build_digest_html(overdue)
     try:
         await send_email(to, "JobJames — Daily Digest", html)
-        log.info("Digest sent to %s", to)
+        log.info("Digest sent to %s (user %s)", to, access_code)
     except Exception as exc:
         log.error("Digest send failed: %s", exc)
 
@@ -164,6 +164,7 @@ def _build_digest_html(overdue: list[dict]) -> str:
 
 # ── Scheduler lifecycle ───────────────────────────────────────────────────────
 
+
 def _parse_time(t: str) -> tuple[int, int]:
     parts = (t or "08:00").split(":")
     return int(parts[0]), int(parts[1])
@@ -180,7 +181,7 @@ def _schedule_search(row: dict) -> None:
     h, m = _parse_time("08:00")
     if row["schedule"] == "daily":
         trigger = CronTrigger(hour=h, minute=m)
-    else:  # twice_daily
+    else:
         trigger = CronTrigger(hour=f"{h},{(h + 12) % 24}", minute=m)
 
     scheduler.add_job(
@@ -197,27 +198,31 @@ def reschedule_search(row: dict) -> None:
     _schedule_search(row)
 
 
-async def start(app=None) -> None:
-    searches = await get_saved_searches()
-    for row in searches:
-        _schedule_search(row)
-
-    cfg = await get_all_settings()
-    freq = cfg.get("digest_frequency", "off")
-    if freq != "off":
-        h, m = _parse_time(cfg.get("digest_time", "08:00"))
-        trigger = CronTrigger(hour=h, minute=m) if freq == "daily" else CronTrigger(day_of_week="mon", hour=h, minute=m)
-        scheduler.add_job(send_digest, trigger=trigger, id=_DIGEST_JOB_ID, replace_existing=True)
-
-    scheduler.start()
-    log.info("Scheduler started with %d job(s)", len(scheduler.get_jobs()))
-
-
-def reschedule_digest(freq: str, time_str: str) -> None:
-    if scheduler.get_job(_DIGEST_JOB_ID):
-        scheduler.remove_job(_DIGEST_JOB_ID)
+def reschedule_digest(freq: str, time_str: str, access_code: str) -> None:
+    job_id = f"email_digest_{access_code}"
+    if scheduler.get_job(job_id):
+        scheduler.remove_job(job_id)
     if freq == "off":
         return
     h, m = _parse_time(time_str or "08:00")
-    trigger = CronTrigger(hour=h, minute=m) if freq == "daily" else CronTrigger(day_of_week="mon", hour=h, minute=m)
-    scheduler.add_job(send_digest, trigger=trigger, id=_DIGEST_JOB_ID, replace_existing=True)
+    trigger = (
+        CronTrigger(hour=h, minute=m)
+        if freq == "daily"
+        else CronTrigger(day_of_week="mon", hour=h, minute=m)
+    )
+    scheduler.add_job(
+        send_digest,
+        trigger=trigger,
+        args=[access_code],
+        id=job_id,
+        replace_existing=True,
+    )
+
+
+async def start(app=None) -> None:
+    searches = await get_all_saved_searches_for_scheduler()
+    for row in searches:
+        _schedule_search(row)
+
+    scheduler.start()
+    log.info("Scheduler started with %d job(s)", len(scheduler.get_jobs()))

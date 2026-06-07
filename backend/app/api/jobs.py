@@ -1,7 +1,8 @@
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.api.deps import require_access_code
 from app.crawlers import run_crawlers
 from app.database import get_dismissed_jobs, get_job, get_saved_jobs, set_status, upsert_jobs
 from app.models.job import JobListing, JobListingPublic, StatusUpdate
@@ -42,46 +43,47 @@ def _from_row(row: dict) -> JobListing:
 
 
 @router.post("/search", response_model=list[JobListingPublic])
-async def search_jobs(req: SearchRequest) -> list[JobListingPublic]:
-    """Run all crawlers, deduplicate, rank by relevance, persist, and return results.
-    Consumed by: SearchForm (HomePage)."""
+async def search_jobs(
+    req: SearchRequest,
+    access_code: str = Depends(require_access_code),
+) -> list[JobListingPublic]:
     raw = await run_crawlers(req)
     unique = deduplicate(raw)
     ranked = score_and_rank(unique, req)
-    await upsert_jobs([_to_row(j) for j in ranked])
+    await upsert_jobs([_to_row(j) for j in ranked], access_code)
     return ranked
 
 
 @router.get("/saved", response_model=list[JobListingPublic])
-async def saved_jobs() -> list[JobListingPublic]:
-    """Return all jobs with status='saved', ordered by score desc.
-    Consumed by: SavedPage, Sidebar (count)."""
-    rows = await get_saved_jobs()
+async def saved_jobs(access_code: str = Depends(require_access_code)) -> list[JobListingPublic]:
+    rows = await get_saved_jobs(access_code)
     return [_from_row(r) for r in rows]
 
 
 @router.get("/dismissed", response_model=list[JobListingPublic])
-async def dismissed_jobs() -> list[JobListingPublic]:
-    """Return all jobs with status='dismissed', ordered by updated_at desc.
-    Consumed by: DismissedPage."""
-    rows = await get_dismissed_jobs()
+async def dismissed_jobs(access_code: str = Depends(require_access_code)) -> list[JobListingPublic]:
+    rows = await get_dismissed_jobs(access_code)
     return [_from_row(r) for r in rows]
 
 
 @router.get("/{job_id}", response_model=JobListingPublic)
-async def get_job_by_id(job_id: str) -> JobListingPublic:
-    """Fetch a single job by ID. Consumed by: tracker from-job endpoint."""
-    row = await get_job(job_id)
+async def get_job_by_id(
+    job_id: str,
+    access_code: str = Depends(require_access_code),
+) -> JobListingPublic:
+    row = await get_job(job_id, access_code)
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
     return _from_row(row)
 
 
 @router.patch("/{job_id}/status", response_model=JobListingPublic)
-async def update_status(job_id: str, body: StatusUpdate) -> JobListingPublic:
-    """Update a job's status (new/saved/dismissed). Returns the updated job.
-    Consumed by: JobCard (star, dismiss, undo) via client.updateJobStatus."""
-    row = await set_status(job_id, body.status.value)
+async def update_status(
+    job_id: str,
+    body: StatusUpdate,
+    access_code: str = Depends(require_access_code),
+) -> JobListingPublic:
+    row = await set_status(job_id, body.status.value, access_code)
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
     return _from_row(row)

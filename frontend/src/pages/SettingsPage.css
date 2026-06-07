@@ -426,3 +426,23 @@
 .search-name-inline:hover .search-name-edit-hint { opacity: 1; }
 
 .search-criteria-cell { min-width: 180px; }
+
+
+.access-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.access-code-display {
+  font-family: monospace;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text);
+  user-select: all;
+}

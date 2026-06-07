@@ -6,6 +6,7 @@ import DismissedPage from './pages/DismissedPage'
 import TrackerPage from './pages/TrackerPage'
 import SettingsPage from './pages/SettingsPage'
 import Sidebar from './components/Sidebar'
+import OnboardingScreen from './components/OnboardingScreen'
 import './App.css'
 
 function GearIcon() {
@@ -42,16 +43,17 @@ function HamburgerIcon() {
   )
 }
 
+// Set theme immediately on load (before React renders) to avoid flash
+const _initTheme = localStorage.getItem('jobjames_theme') || 'dark'
+document.documentElement.setAttribute('data-theme', _initTheme)
+
 export default function App() {
   const location = useLocation()
 
+  const [accessCode, setAccessCode] = useState(() => localStorage.getItem('jj_access_code'))
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [displayName, setDisplayName] = useState(() => localStorage.getItem('jobjames_display_name') || '')
-  const [theme, setTheme] = useState(() => {
-    const t = localStorage.getItem('jobjames_theme') || 'dark'
-    document.documentElement.setAttribute('data-theme', t)
-    return t
-  })
+  const [theme, setTheme] = useState(_initTheme)
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -68,10 +70,21 @@ export default function App() {
     return () => window.removeEventListener('jobjames:name-changed', onNameChange)
   }, [])
 
-  // Close sidebar on mobile when navigating
   useEffect(() => {
     if (window.innerWidth <= 640) setSidebarOpen(false)
   }, [location.pathname])
+
+  function handleOnboardingComplete(code, name) {
+    setAccessCode(code)
+    if (name) {
+      setDisplayName(name)
+      window.dispatchEvent(new CustomEvent('jobjames:name-changed', { detail: name }))
+    }
+  }
+
+  if (!accessCode) {
+    return <OnboardingScreen onComplete={handleOnboardingComplete} />
+  }
 
   return (
     <div className="app">
