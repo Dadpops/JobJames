@@ -14,6 +14,7 @@ from app.database import (
     delete_tracker_entry,
     get_tracker_entries,
     get_tracker_entry,
+    log_activity,
     update_tracker_entry,
 )
 from app.models.tracker import TrackerCreate, TrackerEntry, TrackerUpdate
@@ -66,7 +67,9 @@ async def add_to_tracker(
         "salary_min": body.salary_min,
         "salary_max": body.salary_max,
     }
-    return await create_tracker_entry(entry, access_code)
+    result = await create_tracker_entry(entry, access_code)
+    await log_activity(access_code, "tracker_add", f"Added to tracker: {entry['title']} at {entry['company']}", entity_id=result["id"])
+    return result
 
 
 @router.patch("/{entry_id}", response_model=TrackerEntry)
@@ -81,6 +84,9 @@ async def patch_tracker_entry(
     row = await update_tracker_entry(entry_id, fields, access_code)
     if not row:
         raise HTTPException(status_code=404, detail="Tracker entry not found")
+    if "status" in fields:
+        label = f"{row['title']} at {row['company']}"
+        await log_activity(access_code, "tracker_update", f"Tracker: {label} → {fields['status']}", entity_id=entry_id)
     return row
 
 
@@ -116,7 +122,9 @@ async def add_from_job(
         "salary_min": job.get("salary_min"),
         "salary_max": job.get("salary_max"),
     }
-    return await create_tracker_entry(entry, access_code)
+    result = await create_tracker_entry(entry, access_code)
+    await log_activity(access_code, "tracker_add", f"Added to tracker: {entry['title']} at {entry['company']}", entity_id=result["id"])
+    return result
 
 
 @router.get("/export/csv")

@@ -227,3 +227,9 @@ export async function reorderTrackerEntries(items) {
   })
   if (!res.ok) throw new Error(`Failed to reorder tracker: ${res.status}`)
 }
+
+export async function getActivity(limit = 30) {
+  const res = await apiFetch(`${BASE}/activity?limit=${limit}`)
+  if (!res.ok) throw new Error(`Failed to fetch activity: ${res.status}`)
+  return res.json()
+}

@@ -9,6 +9,7 @@ from app.database import (
     delete_saved_search,
     get_saved_search,
     get_saved_searches,
+    log_activity,
     update_saved_search,
 )
 from app.models.saved_search import SavedSearch, SavedSearchCreate, SavedSearchUpdate
@@ -40,6 +41,7 @@ async def create_search(
     }
     created = await create_saved_search(row, access_code)
     sched.reschedule_search(created)
+    await log_activity(access_code, "search_saved", f"Saved search: {body.name}", entity_id=created["id"])
     return _parse(created)
 
 

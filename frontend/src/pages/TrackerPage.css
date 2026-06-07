@@ -24,6 +24,83 @@
   color: var(--text);
 }
 
+/* ── Weekly Goal ─────────────────────────────────────────── */
+.weekly-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.weekly-goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.weekly-goal-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.weekly-goal-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.weekly-goal-count.weekly-goal-done { color: var(--green); }
+
+.weekly-goal-goal {
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.weekly-goal-goal:hover { opacity: 1; text-decoration: underline dashed; }
+
+.weekly-goal-goal-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.weekly-goal-input {
+  width: 32px;
+  font-size: 11px;
+  padding: 1px 3px;
+  background: var(--elevated);
+  border: 0.5px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+}
+
+.weekly-goal-unit { font-size: 10px; color: var(--text-faint); margin-left: 2px; }
+
+.weekly-goal-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.weekly-goal-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.weekly-goal-badge {
+  font-size: 10px;
+  color: var(--green);
+  font-weight: 500;
+}
+
 .btn-export {
   padding: 4px 12px;
   border-radius: 6px;
@@ -475,4 +552,25 @@
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+/* ── Print / PDF export ──────────────────────────────────── */
+@media print {
+  .topbar, .sidebar, .tracker-header-actions, .tracker-filters,
+  .col-controls, .btn-primary, .btn-export, .modal-backdrop,
+  .tag-remove, .detail-row, .detail-panel { display: none !important; }
+
+  body { background: white; color: black; font-size: 11px; }
+  .tracker-page { gap: 8px; }
+  .tracker-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+  .tracker-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .tracker-table th, .tracker-table td {
+    border: 0.5px solid #ccc;
+    padding: 4px 6px;
+    text-align: left;
+    color: black;
+  }
+  .tracker-table thead th { background: #f0f0f0; font-weight: 600; }
+  .tag-chip { border: 0.5px solid #999; border-radius: 3px; padding: 0 4px; font-size: 9px; }
+  a { color: black; text-decoration: none; }
 }

@@ -23,6 +23,11 @@
   opacity: 0.5;
 }
 
+.job-card-focused {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* ── Main row ─────────────────────────────────────────────── */
 .job-card-main {
   display: flex;
@@ -183,6 +188,23 @@ a.glassdoor-rating:hover { text-decoration: underline; color: var(--accent); }
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   cursor: pointer;
   font-family: inherit;
+}
+
+.btn-quick-apply {
+  font-size: 10px;
+  padding: 2px 7px;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.job-card:hover .btn-quick-apply { opacity: 1; }
+.btn-quick-apply:hover { color: var(--green); border-color: var(--green); }
+.btn-quick-apply.quick-apply-done {
+  opacity: 1;
+  color: var(--green);
+  border-color: var(--green);
+  cursor: default;
 }
 
 .btn-dismiss-quick {

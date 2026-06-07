@@ -133,6 +133,16 @@ CREATE TABLE IF NOT EXISTS saved_searches (
     result_limit    INTEGER DEFAULT 10,
     PRIMARY KEY (id, access_code)
 );
+
+CREATE TABLE IF NOT EXISTS activity_log (
+    id          TEXT NOT NULL,
+    access_code TEXT NOT NULL,
+    event_type  TEXT NOT NULL,
+    description TEXT NOT NULL,
+    entity_id   TEXT,
+    created_at  TEXT NOT NULL,
+    PRIMARY KEY (id, access_code)
+);
 """
 
 
@@ -487,3 +497,45 @@ async def touch_saved_search(search_id: str, access_code: str) -> None:
             text("UPDATE saved_searches SET last_run = :now WHERE id = :id AND access_code = :ac"),
             {"now": _now(), "id": search_id, "ac": access_code},
         )
+
+
+# ── Activity Log ──────────────────────────────────────────────────────────────
+
+import uuid as _uuid
+
+
+async def log_activity(access_code: str, event_type: str, description: str, entity_id: str | None = None) -> None:
+    """Fire-and-forget activity logging; errors are silently swallowed."""
+    try:
+        async with _engine.begin() as conn:
+            await conn.execute(
+                text("""
+                    INSERT INTO activity_log (id, access_code, event_type, description, entity_id, created_at)
+                    VALUES (:id, :ac, :event_type, :description, :entity_id, :now)
+                """),
+                {
+                    "id": str(_uuid.uuid4()),
+                    "ac": access_code,
+                    "event_type": event_type,
+                    "description": description,
+                    "entity_id": entity_id,
+                    "now": _now(),
+                },
+            )
+    except Exception:
+        pass
+
+
+async def get_activity(access_code: str, limit: int = 30) -> list[dict]:
+    async with _engine.connect() as conn:
+        result = await conn.execute(
+            text("""
+                SELECT id, event_type, description, entity_id, created_at
+                FROM activity_log
+                WHERE access_code = :ac
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """),
+            {"ac": access_code, "limit": limit},
+        )
+        return [dict(r) for r in result.mappings().fetchall()]

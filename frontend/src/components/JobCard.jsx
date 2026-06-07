@@ -44,11 +44,12 @@ function isStaleDate(postedAt) {
   return (Date.now() - posted.getTime()) > 30 * 86400000
 }
 
-export default function JobCard({ job, onStatusChange, isExpanded = false, onExpand = () => {} }) {
+export default function JobCard({ job, onStatusChange, isExpanded = false, onExpand = () => {}, isFocused = false }) {
   const [trackStatus, setTrackStatus]   = useState('Found')
   const [trackNotes, setTrackNotes]     = useState('')
   const [tracked, setTracked]           = useState(false)
   const [tracking, setTracking]         = useState(false)
+  const [appliedQuick, setAppliedQuick] = useState(false)
   const [showEmail, setShowEmail]       = useState(false)
   const [emailAddr, setEmailAddr]       = useState('')
   const [emailState, setEmailState]     = useState('idle')
@@ -105,6 +106,19 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
     }
   }
 
+  async function handleQuickApply(e) {
+    e.stopPropagation()
+    if (appliedQuick) return
+    setAppliedQuick(true)
+    try {
+      const entry = await addJobToTracker(job.id)
+      await updateTrackerEntry(entry.id, { status: 'Applied' })
+      setTracked(true)
+    } catch {
+      // silently succeed — user can fix in tracker
+    }
+  }
+
   async function handleSendEmail(e) {
     e.preventDefault()
     e.stopPropagation()
@@ -123,7 +137,7 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
 
   return (
     <article
-      className={`job-card${stale ? ' job-card-stale' : ''}${isExpanded ? ' job-card-open' : ''}${isDismissed ? ' job-card-dismissed' : ''}`}
+      className={`job-card${stale ? ' job-card-stale' : ''}${isExpanded ? ' job-card-open' : ''}${isDismissed ? ' job-card-dismissed' : ''}${isFocused ? ' job-card-focused' : ''}`}
       onClick={handleCardClick}
     >
       {/* ── Collapsed header ──────────────────────────────────── */}
@@ -177,8 +191,18 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
           )}
         </div>
 
-        {/* Right — dismiss or undo */}
+        {/* Right — quick actions + dismiss/undo */}
         <div className="job-right">
+          {!isDismissed && (
+            <button
+              className={`btn-act btn-quick-apply${appliedQuick ? ' quick-apply-done' : ''}`}
+              onClick={handleQuickApply}
+              disabled={appliedQuick}
+              title="Track as Applied"
+            >
+              {appliedQuick ? '✓ Applied' : '✓ Applied'}
+            </button>
+          )}
           {isDismissed ? (
             <button className="btn-act btn-undo-dismiss" onClick={handleUndo}>
               Undo

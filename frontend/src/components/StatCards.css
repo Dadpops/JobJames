@@ -1,8 +1,13 @@
+.stat-cards-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .stat-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-bottom: 4px;
 }
 
 .stat-card {
@@ -40,3 +45,70 @@
   letter-spacing: 0.6px;
   font-weight: 500;
 }
+
+/* ── Salary Insights Bar ─────────────────────────────────── */
+.salary-insights {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.salary-insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.salary-insights-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.salary-insights-count {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.salary-bar-track {
+  position: relative;
+  height: 5px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: visible;
+}
+
+.salary-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--green) 100%);
+  border-radius: 99px;
+  opacity: 0.6;
+}
+
+.salary-bar-median {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 11px;
+  background: var(--text);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  cursor: default;
+}
+
+.salary-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.salary-med-label { color: var(--text-muted); font-weight: 500; }
