@@ -3,10 +3,11 @@ import io
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.api.deps import require_access_code
 from app.database import (
     bulk_reorder_tracker,
     create_tracker_entry,
@@ -33,20 +34,24 @@ class _ReorderItem(BaseModel):
 
 
 @router.patch("/reorder", status_code=200)
-async def reorder_tracker(body: list[_ReorderItem]):
-    await bulk_reorder_tracker([i.model_dump() for i in body])
+async def reorder_tracker(
+    body: list[_ReorderItem],
+    access_code: str = Depends(require_access_code),
+):
+    await bulk_reorder_tracker([i.model_dump() for i in body], access_code)
     return {}
 
 
 @router.get("", response_model=list[TrackerEntry])
-async def list_tracker():
-    """Return all tracker entries ordered by sort_order then date_added.
-    Consumed by: TrackerPage, Sidebar (pipeline counts), HomePage (overdue follow-ups)."""
-    return await get_tracker_entries()
+async def list_tracker(access_code: str = Depends(require_access_code)):
+    return await get_tracker_entries(access_code)
 
 
 @router.post("", response_model=TrackerEntry, status_code=201)
-async def add_to_tracker(body: TrackerCreate):
+async def add_to_tracker(
+    body: TrackerCreate,
+    access_code: str = Depends(require_access_code),
+):
     entry = {
         **_EMPTY_ENTRY,
         "id": str(uuid.uuid4()),
@@ -61,32 +66,40 @@ async def add_to_tracker(body: TrackerCreate):
         "salary_min": body.salary_min,
         "salary_max": body.salary_max,
     }
-    return await create_tracker_entry(entry)
+    return await create_tracker_entry(entry, access_code)
 
 
 @router.patch("/{entry_id}", response_model=TrackerEntry)
-async def patch_tracker_entry(entry_id: str, body: TrackerUpdate):
+async def patch_tracker_entry(
+    entry_id: str,
+    body: TrackerUpdate,
+    access_code: str = Depends(require_access_code),
+):
     fields = body.model_dump(exclude_none=True)
     if "status" in fields and hasattr(fields["status"], "value"):
         fields["status"] = fields["status"].value
-    row = await update_tracker_entry(entry_id, fields)
+    row = await update_tracker_entry(entry_id, fields, access_code)
     if not row:
         raise HTTPException(status_code=404, detail="Tracker entry not found")
     return row
 
 
 @router.delete("/{entry_id}", status_code=204)
-async def remove_tracker_entry(entry_id: str):
-    if not await delete_tracker_entry(entry_id):
+async def remove_tracker_entry(
+    entry_id: str,
+    access_code: str = Depends(require_access_code),
+):
+    if not await delete_tracker_entry(entry_id, access_code):
         raise HTTPException(status_code=404, detail="Tracker entry not found")
 
 
 @router.post("/from-job/{job_id}", response_model=TrackerEntry, status_code=201)
-async def add_from_job(job_id: str):
-    """Create a tracker entry pre-populated from an existing job record.
-    Consumed by: JobCard (Add to Tracker button) via client.addJobToTracker."""
+async def add_from_job(
+    job_id: str,
+    access_code: str = Depends(require_access_code),
+):
     from app.database import get_job
-    job = await get_job(job_id)
+    job = await get_job(job_id, access_code)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     entry = {
@@ -103,12 +116,12 @@ async def add_from_job(job_id: str):
         "salary_min": job.get("salary_min"),
         "salary_max": job.get("salary_max"),
     }
-    return await create_tracker_entry(entry)
+    return await create_tracker_entry(entry, access_code)
 
 
 @router.get("/export/csv")
-async def export_csv():
-    entries = await get_tracker_entries()
+async def export_csv(access_code: str = Depends(require_access_code)):
+    entries = await get_tracker_entries(access_code)
     output = io.StringIO()
     fields = [
         "title", "company", "location", "url", "status", "date_added",

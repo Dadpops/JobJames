@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 
+from app.api.deps import require_access_code
 from app.database import get_job, get_saved_jobs
 from app.services.email_service import send_email
 
@@ -56,8 +57,11 @@ def _wrap(heading: str, jobs: list[dict]) -> str:
 
 
 @router.post("/email")
-async def email_saved_jobs(req: EmailRequest):
-    jobs = await get_saved_jobs()
+async def email_saved_jobs(
+    req: EmailRequest,
+    access_code: str = Depends(require_access_code),
+):
+    jobs = await get_saved_jobs(access_code)
     if not jobs:
         raise HTTPException(status_code=400, detail="No saved jobs to send")
     heading = (
@@ -69,8 +73,12 @@ async def email_saved_jobs(req: EmailRequest):
 
 
 @router.post("/{job_id}/email")
-async def email_single_job(job_id: str, req: EmailRequest):
-    job = await get_job(job_id)
+async def email_single_job(
+    job_id: str,
+    req: EmailRequest,
+    access_code: str = Depends(require_access_code),
+):
+    job = await get_job(job_id, access_code)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     heading = (

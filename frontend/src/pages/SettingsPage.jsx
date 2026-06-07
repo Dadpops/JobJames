@@ -89,6 +89,7 @@ export default function SettingsPage() {
   const [nameDraft, setNameDraft]     = useState('')
   const [editingName, setEditingName] = useState(false)
   const [expandedSearchId, setExpandedSearchId] = useState(null)
+  const accessCode = localStorage.getItem('jj_access_code') || ''
 
   useEffect(() => {
     Promise.all([getSettings(), getSavedSearches()])
@@ -135,18 +136,21 @@ export default function SettingsPage() {
     }
   }
 
+  function handleSwitchAccount() {
+    localStorage.removeItem('jj_access_code')
+    localStorage.removeItem('jobjames_display_name')
+    window.location.reload()
+  }
+
   async function handleTestSmtp() {
     setTestState('sending')
     try {
       await saveSettings(cfg)
       const to = cfg.digest_to || prompt('Send test email to:')
       if (!to) { setTestState('idle'); return }
-      const res = await fetch('/api/jobs/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to }),
-      })
-      setTestState(res.ok ? 'ok' : 'error')
+      const { emailSavedJobs } = await import('../api/client')
+      await emailSavedJobs(to)
+      setTestState('ok')
     } catch {
       setTestState('error')
     }
@@ -289,6 +293,19 @@ export default function SettingsPage() {
                 <span className="name-edit-hint">Edit</span>
               </div>
             )}
+          </Field>
+          <Field label="Access code" hint=" — share this to use your account on another device">
+            <div className="access-code-row">
+              <code className="access-code-display">{accessCode}</code>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleSwitchAccount}
+                title="Clear this account from this browser and return to the sign-in screen"
+              >
+                Switch account
+              </button>
+            </div>
           </Field>
         </div>
       </Section>
