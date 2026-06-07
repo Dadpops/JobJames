@@ -144,6 +144,30 @@ All sources registered in `JobSource` enum, crawler registry, and `SearchForm` s
 
 ---
 
+## Phase 3h — Power Tools & New Features 🔲
+
+**Branch:** `phase-3h-new-features`
+**PR:** pending
+**Status:** In progress
+
+### Scope
+
+| # | Feature | Status |
+|---|---------|--------|
+| 1 | Light/dark mode toggle | ✅ Already in App.jsx (phase-3b) |
+| 2 | Glassdoor score + link on job cards | ✅ Star rating pill (links to company search) |
+| 3 | Activity log feed | ✅ activity_log table; GET /api/activity; ActivityFeed component |
+| 4 | Weekly goal + progress bar | ✅ TrackerPage header widget; editable goal; Mon–Sun window |
+| 5 | Salary insights bar | ✅ Min/median/max bar below StatCards (≥3 jobs with salary) |
+| 6 | Keyboard shortcuts | ✅ j/k navigate, s save, d dismiss, / focus, ? overlay |
+| 7 | Browser notifications | ✅ Notification API on search complete (tab hidden) |
+| 8 | Search history | ✅ localStorage history dropdown in search form |
+| 9 | PDF pipeline export | ✅ Print PDF button + @media print CSS on TrackerPage |
+| 10 | Quick apply tracker | ✅ "✓ Applied" hover button on collapsed job cards |
+| 11 | Company size filter | ⏭ Skipped — no crawler data source for company size |
+
+---
+
 ## Phase 6 — AI & Intelligence 🔲
 
 **Branch:** `phase-6-ai`
