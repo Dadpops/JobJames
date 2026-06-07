@@ -2,6 +2,19 @@ import { useState, useRef, useEffect } from 'react'
 import InfoTooltip from './InfoTooltip'
 import './SearchForm.css'
 
+const HISTORY_KEY = 'jj_search_history'
+const MAX_HISTORY = 8
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') } catch { return [] }
+}
+
+function saveHistory(criteria) {
+  const entry = { title: criteria.title, location: criteria.location || '', criteria }
+  const prev = loadHistory().filter(h => !(h.title === entry.title && h.location === entry.location))
+  localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev].slice(0, MAX_HISTORY)))
+}
+
 const SOURCES = ['indeed', 'greenhouse', 'lever', 'linkedin', 'glassdoor', 'wellfound', 'ziprecruiter', 'remoteok', 'weworkremotely']
 
 const JOB_ROLES = [
@@ -67,6 +80,7 @@ export default function SearchForm({
   activeSavedSearch,
   onClearActive,
   onUpdateSearch,
+  searchInputRef,
 }) {
   const [form, setForm]               = useState(DEFAULT)
   const [suggestions, setSuggestions] = useState([])
@@ -75,7 +89,11 @@ export default function SearchForm({
   const [showSaveForm, setShowSaveForm] = useState(false)
   const [saveName, setSaveName]       = useState('')
   const [updateState, setUpdateState] = useState('idle') // idle | saving | saved
-  const titleWrapRef = useRef(null)
+  const [history, setHistory]         = useState(loadHistory)
+  const [showHistory, setShowHistory] = useState(false)
+  const titleWrapRef   = useRef(null)
+  const _ownTitleRef   = useRef(null)
+  const titleInputRef  = searchInputRef ?? _ownTitleRef
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -149,7 +167,31 @@ export default function SearchForm({
     e.preventDefault()
     if (!form.sources.length) return
     setSuggestions([])
-    onSearch(getCurrentCriteria())
+    setShowHistory(false)
+    const criteria = getCurrentCriteria()
+    if (criteria.title) {
+      saveHistory(criteria)
+      setHistory(loadHistory())
+    }
+    onSearch(criteria)
+  }
+
+  function loadFromHistory(entry) {
+    const c = entry.criteria
+    setForm({
+      title: c.title || '',
+      location: c.location || '',
+      remote: !!c.remote,
+      salary_min: c.salary_min != null ? String(c.salary_min) : '',
+      salary_max: c.salary_max != null ? String(c.salary_max) : '',
+      sources: c.sources?.length ? c.sources : [...SOURCES],
+      date_posted: c.date_posted || 'any',
+      experience_level: c.experience_level || 'any',
+      job_type: c.job_type || 'any',
+    })
+    if (c.salary_min != null || c.salary_max != null) setShowSalary(true)
+    setShowHistory(false)
+    setSuggestions([])
   }
 
   // Extract the current form values as a plain criteria object
@@ -225,12 +267,15 @@ export default function SearchForm({
       <div className="search-main-row">
         <div className="search-input-wrap" ref={titleWrapRef}>
           <input
+            ref={titleInputRef}
             type="text"
             className="search-input"
             placeholder="Job title or role…"
             value={form.title}
             onChange={e => handleTitleChange(e.target.value)}
             onKeyDown={handleTitleKeyDown}
+            onFocus={() => { if (!form.title.trim()) setShowHistory(true) }}
+            onBlur={() => setTimeout(() => setShowHistory(false), 150)}
             autoComplete="off"
             required
           />
@@ -243,6 +288,18 @@ export default function SearchForm({
                   onMouseDown={() => pickSuggestion(role)}
                 >
                   {role}
+                </li>
+              ))}
+            </ul>
+          )}
+          {showHistory && !suggestions.length && history.length > 0 && (
+            <ul className="history-list">
+              <li className="history-label">Recent searches</li>
+              {history.map((h, i) => (
+                <li key={i} className="history-item" onMouseDown={() => loadFromHistory(h)}>
+                  <span className="history-icon">↺</span>
+                  <span className="history-title">{h.title}</span>
+                  {h.location && <span className="history-location">· {h.location}</span>}
                 </li>
               ))}
             </ul>

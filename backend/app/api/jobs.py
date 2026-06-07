@@ -31,6 +31,7 @@ def _to_row(job: JobListing) -> dict:
         "status": job.status.value,
         "sources": json.dumps(sources),
         "score_breakdown": json.dumps(job.score_breakdown),
+        "glassdoor_rating": job.glassdoor_rating,
     }
 
 
@@ -39,6 +40,7 @@ def _from_row(row: dict) -> JobListing:
     row["remote"] = bool(row["remote"])
     row["sources"] = json.loads(row.get("sources") or "[]") or [row["source"]]
     row["score_breakdown"] = json.loads(row.get("score_breakdown") or "{}")
+    row.setdefault("glassdoor_rating", None)
     return JobListing(**row)
 
 

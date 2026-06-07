@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     updated_at          TEXT,
     sources             TEXT,
     score_breakdown     TEXT,
+    glassdoor_rating    REAL,
     PRIMARY KEY (id, access_code)
 );
 
@@ -140,11 +141,15 @@ async def init_db() -> None:
     async with _engine.begin() as conn:
         for stmt in statements:
             await conn.execute(text(stmt))
-        # Migration: add email column to users table (ignored if it already exists)
-        try:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT"))
-        except Exception:
-            pass
+        # Migrations (ignored if column already exists)
+        for migration in [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS glassdoor_rating REAL",
+        ]:
+            try:
+                await conn.execute(text(migration))
+            except Exception:
+                pass
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
@@ -202,15 +207,18 @@ async def upsert_jobs(jobs: list[dict], access_code: str) -> None:
             text("""
                 INSERT INTO jobs (id, access_code, title, company, location, remote,
                                   salary_min, salary_max, url, source, description_snippet,
-                                  posted_at, score, status, sources, score_breakdown, updated_at)
+                                  posted_at, score, status, sources, score_breakdown,
+                                  glassdoor_rating, updated_at)
                 VALUES (:id, :access_code, :title, :company, :location, :remote,
                         :salary_min, :salary_max, :url, :source, :description_snippet,
-                        :posted_at, :score, :status, :sources, :score_breakdown, :updated_at)
+                        :posted_at, :score, :status, :sources, :score_breakdown,
+                        :glassdoor_rating, :updated_at)
                 ON CONFLICT (id, access_code) DO UPDATE SET
-                    score           = EXCLUDED.score,
-                    sources         = EXCLUDED.sources,
-                    score_breakdown = EXCLUDED.score_breakdown,
-                    updated_at      = EXCLUDED.updated_at
+                    score            = EXCLUDED.score,
+                    sources          = EXCLUDED.sources,
+                    score_breakdown  = EXCLUDED.score_breakdown,
+                    glassdoor_rating = EXCLUDED.glassdoor_rating,
+                    updated_at       = EXCLUDED.updated_at
             """),
             rows,
         )
