@@ -79,6 +79,23 @@
   background: var(--elevated);
 }
 
+.topbar-signout-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.topbar-signout-btn:hover {
+  color: var(--red, #e05a5a);
+  background: var(--elevated);
+}
+
 /* ── Body: sidebar + main ──────────────────────────────────── */
 .app-body {
   display: flex;

@@ -3,7 +3,10 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.database import create_user, get_user, get_user_by_email
+from fastapi import Depends
+
+from app.api.deps import require_access_code
+from app.database import create_user, delete_user_data, get_user, get_user_by_email
 from app.services.email_service import send_system_email
 
 router = APIRouter()
@@ -63,6 +66,12 @@ async def login(body: LoginRequest):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid access code")
     return {"access_code": code, "display_name": user.get("display_name") or ""}
+
+
+@router.delete("/account")
+async def delete_account(access_code: str = Depends(require_access_code)):
+    await delete_user_data(access_code)
+    return {"deleted": True}
 
 
 @router.post("/recover")

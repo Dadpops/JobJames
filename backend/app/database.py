@@ -168,6 +168,19 @@ async def create_user(access_code: str, display_name: str = "", email: str = "")
         )
 
 
+async def delete_user_data(access_code: str) -> None:
+    async with _engine.begin() as conn:
+        for table in ("jobs", "tracker", "settings", "saved_searches"):
+            await conn.execute(
+                text(f"DELETE FROM {table} WHERE access_code = :ac"),
+                {"ac": access_code},
+            )
+        await conn.execute(
+            text("DELETE FROM users WHERE access_code = :ac"),
+            {"ac": access_code},
+        )
+
+
 async def get_user_by_email(email: str) -> dict | None:
     async with _engine.connect() as conn:
         result = await conn.execute(

@@ -43,6 +43,16 @@ function HamburgerIcon() {
   )
 }
 
+function SignOutIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  )
+}
+
 // Set theme immediately on load (before React renders) to avoid flash
 const _initTheme = localStorage.getItem('jobjames_theme') || 'dark'
 document.documentElement.setAttribute('data-theme', _initTheme)
@@ -73,6 +83,12 @@ export default function App() {
   useEffect(() => {
     if (window.innerWidth <= 640) setSidebarOpen(false)
   }, [location.pathname])
+
+  function handleSignOut() {
+    localStorage.removeItem('jj_access_code')
+    localStorage.removeItem('jobjames_display_name')
+    window.location.reload()
+  }
 
   function handleOnboardingComplete(code, name) {
     setAccessCode(code)
@@ -125,6 +141,14 @@ export default function App() {
           <Link to="/settings" className="topbar-settings-btn" aria-label="Settings" title="Settings">
             <GearIcon />
           </Link>
+          <button
+            className="topbar-signout-btn"
+            onClick={handleSignOut}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <SignOutIcon />
+          </button>
         </div>
       </header>
 

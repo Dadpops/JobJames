@@ -57,6 +57,12 @@ export async function login(accessCode, displayName) {
   return res.json()
 }
 
+export async function deleteAccount() {
+  const res = await apiFetch(`${BASE}/auth/account`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Failed to delete account')
+  return res.json()
+}
+
 export async function recoverCode(email) {
   const res = await fetch(`${BASE}/auth/recover`, {
     method: 'POST',

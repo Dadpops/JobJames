@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   getSettings, saveSettings,
   getSavedSearches, updateSavedSearch, deleteSavedSearch, runSavedSearch,
+  deleteAccount,
 } from '../api/client'
 import './SettingsPage.css'
 
@@ -89,6 +90,8 @@ export default function SettingsPage() {
   const [nameDraft, setNameDraft]     = useState('')
   const [editingName, setEditingName] = useState(false)
   const [expandedSearchId, setExpandedSearchId] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const accessCode = localStorage.getItem('jj_access_code') || ''
 
   useEffect(() => {
@@ -136,7 +139,19 @@ export default function SettingsPage() {
     }
   }
 
-  function handleSwitchAccount() {
+  function handleSignOut() {
+    localStorage.removeItem('jj_access_code')
+    localStorage.removeItem('jobjames_display_name')
+    window.location.reload()
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      await deleteAccount()
+    } catch {
+      // proceed with local sign-out even if API call fails
+    }
     localStorage.removeItem('jj_access_code')
     localStorage.removeItem('jobjames_display_name')
     window.location.reload()
@@ -300,10 +315,10 @@ export default function SettingsPage() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={handleSwitchAccount}
+                onClick={handleSignOut}
                 title="Clear this account from this browser and return to the sign-in screen"
               >
-                Switch account
+                Sign out
               </button>
             </div>
           </Field>
@@ -371,6 +386,32 @@ export default function SettingsPage() {
         >
           {testState === 'sending' ? 'Sending…' : testState === 'ok' ? 'Sent!' : testState === 'error' ? 'Failed' : 'Send test email'}
         </button>
+      </Section>
+
+      {/* ── Danger Zone ── */}
+      <Section title="Danger Zone">
+        <div className="danger-zone">
+          <p className="danger-zone-desc">
+            Permanently delete your account and all associated data — jobs, tracker entries, saved searches, and settings. This cannot be undone.
+          </p>
+          {!confirmDelete ? (
+            <button type="button" className="btn-danger" onClick={() => setConfirmDelete(true)}>
+              Delete account
+            </button>
+          ) : (
+            <div className="danger-confirm">
+              <p className="danger-confirm-text">Are you sure? All your data will be permanently deleted and cannot be recovered.</p>
+              <div className="danger-confirm-actions">
+                <button type="button" className="btn-secondary" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+                  Cancel
+                </button>
+                <button type="button" className="btn-danger-solid" onClick={handleDeleteAccount} disabled={deleting}>
+                  {deleting ? 'Deleting…' : 'Yes, delete my account'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </Section>
 
       {/* ── Saved Searches ── */}
