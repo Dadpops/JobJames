@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 # VITE_API_URL is baked in at build time.
 # Railway: set this build arg to your backend service URL.
