@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import InfoTooltip from './InfoTooltip'
 import './SearchForm.css'
 
 const SOURCES = ['indeed', 'greenhouse', 'lever', 'linkedin', 'glassdoor', 'wellfound', 'ziprecruiter', 'remoteok', 'weworkremotely']
@@ -342,13 +343,16 @@ export default function SearchForm({
         </button>
 
         {onToggleStale && (
-          <button
-            type="button"
-            className={`filter-stale-toggle${hideStale ? ' filter-stale-toggle-active' : ''}`}
-            onClick={onToggleStale}
-          >
-            {hideStale ? 'Stale hidden' : 'Hide stale'}
-          </button>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+            <button
+              type="button"
+              className={`filter-stale-toggle${hideStale ? ' filter-stale-toggle-active' : ''}`}
+              onClick={onToggleStale}
+            >
+              {hideStale ? 'Stale hidden' : 'Hide stale'}
+            </button>
+            <InfoTooltip text="Hides jobs posted more than 30 days ago. Stale jobs may still be actively hiring." />
+          </span>
         )}
       </div>
 

@@ -1,3 +1,4 @@
+import InfoTooltip from './InfoTooltip'
 import './StatCards.css'
 
 export default function StatCards({ jobs, followupsDue }) {
@@ -24,8 +25,9 @@ export default function StatCards({ jobs, followupsDue }) {
         <span className={`stat-value${overdue ? ' stat-value-red' : ' stat-value-faint'}`}>
           {followupsDue ?? '—'}
         </span>
-        <span className="stat-label">
+        <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
           Follow-ups Due{overdue ? ' ⚠' : ''}
+          <InfoTooltip text="Tracker entries whose follow-up date has passed. Click the Tracker tab to review them." />
         </span>
       </div>
     </div>

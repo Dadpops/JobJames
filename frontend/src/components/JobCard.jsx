@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { addJobToTracker, updateTrackerEntry, emailJob } from '../api/client'
+import InfoTooltip from './InfoTooltip'
 import './JobCard.css'
 
 // Consumed by: HomePage, SavedPage, DismissedPage
@@ -256,7 +257,10 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
 
             {/* Tracker section */}
             <div className="expanded-tracker" onClick={e => e.stopPropagation()}>
-              <span className="expanded-tracker-label">Add to Tracker</span>
+              <span className="expanded-tracker-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                Add to Tracker
+                <InfoTooltip text="Saves this job to your Tracker tab so you can manage your application progress, add notes, and set follow-up dates." />
+              </span>
               <select
                 className="tracker-status-select"
                 value={trackStatus}

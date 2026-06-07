@@ -5,6 +5,7 @@ import {
   getSavedSearches, updateSavedSearch, deleteSavedSearch, runSavedSearch,
   deleteAccount,
 } from '../api/client'
+import InfoTooltip from '../components/InfoTooltip'
 import './SettingsPage.css'
 
 const SCHEDULES = ['off', 'daily', 'twice_daily']
@@ -59,19 +60,26 @@ function CriteriaDetail({ criteria }) {
   )
 }
 
-function Section({ title, children }) {
+function Section({ title, tooltip, children }) {
   return (
     <section className="settings-section">
-      <h2 className="settings-section-title">{title}</h2>
+      <h2 className="settings-section-title">
+        {title}
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </h2>
       {children}
     </section>
   )
 }
 
-function Field({ label, hint, children }) {
+function Field({ label, hint, tooltip, children }) {
   return (
     <div className="settings-field">
-      <label className="settings-label">{label}{hint && <span className="settings-hint">{hint}</span>}</label>
+      <label className="settings-label">
+        {label}
+        {tooltip && <InfoTooltip text={tooltip} />}
+        {hint && <span className="settings-hint">{hint}</span>}
+      </label>
       {children}
     </div>
   )
@@ -187,6 +195,7 @@ export default function SettingsPage() {
     await deleteSavedSearch(id)
     setSearches(ss => ss.filter(s => s.id !== id))
     if (expandedSearchId === id) setExpandedSearchId(null)
+    window.dispatchEvent(new CustomEvent('jobjames:search-saved'))
   }
 
   function handleEditSearch(search) {
@@ -309,7 +318,7 @@ export default function SettingsPage() {
               </div>
             )}
           </Field>
-          <Field label="Access code" hint=" — share this to use your account on another device">
+          <Field label="Access code" tooltip="Your unique sign-in code. Use it to access your account from any browser or device. Anyone with this code can access your account." hint=" — share this to use your account on another device">
             <div className="access-code-row">
               <code className="access-code-display">{accessCode}</code>
               <button
@@ -326,7 +335,7 @@ export default function SettingsPage() {
       </Section>
 
       {/* ── Email Digest ── */}
-      <Section title="Email Digest">
+      <Section title="Email Digest" tooltip="Sends a regular email of your saved jobs. Requires a recipient email and a frequency other than Off.">
         <div className="settings-grid">
           <Field label="Recipient email">
             <input
@@ -428,11 +437,11 @@ export default function SettingsPage() {
                 <tr>
                   <th>Name</th>
                   <th>Criteria</th>
-                  <th>Schedule</th>
+                  <th>Schedule <InfoTooltip text="How often to automatically run this search and email new results." /></th>
                   <th>Email results to</th>
-                  <th>Limit</th>
+                  <th>Limit <InfoTooltip text="Max number of results included in each scheduled email." /></th>
                   <th>Last run</th>
-                  <th>On</th>
+                  <th>On <InfoTooltip text="Enable or disable automatic scheduling for this search." /></th>
                   <th></th>
                 </tr>
               </thead>
