@@ -17,6 +17,11 @@ class JobSource(str, Enum):
     greenhouse = "greenhouse"
     lever = "lever"
     linkedin = "linkedin"
+    glassdoor = "glassdoor"
+    wellfound = "wellfound"
+    ziprecruiter = "ziprecruiter"
+    remoteok = "remoteok"
+    weworkremotely = "weworkremotely"
 
 
 class JobListing(BaseModel):

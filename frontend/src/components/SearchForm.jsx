@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './SearchForm.css'
 
-const SOURCES = ['indeed', 'greenhouse', 'lever', 'linkedin']
+const SOURCES = ['indeed', 'greenhouse', 'lever', 'linkedin', 'glassdoor', 'wellfound', 'ziprecruiter', 'remoteok', 'weworkremotely']
 
 const JOB_ROLES = [
   'Software Engineer', 'Senior Software Engineer', 'Staff Software Engineer',
