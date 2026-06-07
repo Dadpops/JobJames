@@ -1,6 +1,6 @@
 # JobJames Roadmap
 
-Last updated: 2026-06-06
+Last updated: 2026-06-07
 
 ---
 
@@ -124,30 +124,50 @@ All sources registered in `JobSource` enum, crawler registry, and `SearchForm` s
 
 ---
 
-## Phase 5 — AI & Intelligence 🔲
+## Phase 5 — Multi-user Isolation ✅
 
-**Branch:** `phase-5-ai`
+**Branch:** `phase-user-isolation`, `fix-frontend-build`
+**PRs:** #25, #26
+**Status:** Merged & deployed to Railway
+
+### Scope
+- Access code system — XXXX-XXXX codes for user identity; no passwords
+- OnboardingScreen gate — new users register (name + generated code), returning users log in with code
+- `POST /api/auth/register`, `POST /api/auth/login` — no auth required
+- `X-Access-Code` header required on all other API endpoints (401 if missing)
+- SQLAlchemy Core async replacing raw aiosqlite — supports SQLite (local) and PostgreSQL (Railway)
+- `access_code` column added to all tables (`jobs`, `tracker`, `settings`, `saved_searches`); composite PKs `(id, access_code)`
+- `users` table added; per-user scheduler digest jobs with unique APScheduler job IDs
+- "Switch account" button in Settings
+- Frontend: `package-lock.json` committed; Dockerfile switched from `npm ci` to `npm install`
+- Railway: `ALLOWED_ORIGINS` set to `["*"]` (valid JSON for pydantic-settings v2), `PORT=8000` pinned, non-fatal startup wrapper added, `ssl=False` + 15s timeout for asyncpg
+
+---
+
+## Phase 6 — AI & Intelligence 🔲
+
+**Branch:** `phase-6-ai`
 **Issue:** #17
 **Status:** Planned
 
 ### Sub-features
 
-#### 5a — Resume keyword matching
+#### 6a — Resume keyword matching
 - Upload a resume (PDF/text) via the Settings page
 - Score jobs against resume keywords in addition to search criteria
 - Surface a "match %" per job card
 
-#### 5b — Smart re-ranking
+#### 6b — Smart re-ranking
 - Use Claude API to re-rank results based on full job description vs. user profile
 - Run asynchronously post-search; update scores without blocking the UI
 
-#### 5c — AI cover letter drafts
+#### 6c — AI cover letter drafts
 - "Draft cover letter" button per job card
 - Claude-generated draft tailored to job description + user resume
 - Displayed in a modal with copy-to-clipboard
 
-#### 5d — Job fit explanation
+#### 6d — Job fit explanation
 - Plain-English "Why this job?" blurb per result
 - Generated from job description + search intent
 
-**Depends on:** Design polish for modal/UI surfaces (complete)
+**Depends on:** Phase 5 multi-user isolation (complete)
