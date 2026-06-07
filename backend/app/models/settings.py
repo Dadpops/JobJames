@@ -13,3 +13,4 @@ class SettingsUpdate(BaseModel):
     smtp_password: Optional[str] = None
     smtp_from: Optional[str] = None
     smtp_tls: Optional[str] = None           # "true" | "false"
+    weekly_application_goal: Optional[str] = None  # integer as string

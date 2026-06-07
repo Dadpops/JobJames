@@ -82,6 +82,14 @@ def _from_next(raw: dict, remote_search: bool) -> JobListing | None:
         or "remote" in (location or "").lower()
         or "remote" in title.lower()
     )
+    rating_raw = (
+        raw.get("overallRating")
+        or raw.get("rating")
+        or (raw.get("employer") or {}).get("overallRating")
+        or (raw.get("employerProfile") or {}).get("overallRating")
+    )
+    glassdoor_rating = float(rating_raw) if isinstance(rating_raw, (int, float)) and rating_raw > 0 else None
+
     uid = hashlib.md5(url.encode()).hexdigest()
     return JobListing(
         id=uid,
@@ -92,6 +100,7 @@ def _from_next(raw: dict, remote_search: bool) -> JobListing | None:
         url=url,
         source=JobSource.glassdoor,
         posted_at=str(posted_at) if posted_at else None,
+        glassdoor_rating=glassdoor_rating,
     )
 
 

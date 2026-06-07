@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import require_access_code
 from app.crawlers import run_crawlers
-from app.database import get_dismissed_jobs, get_job, get_saved_jobs, set_status, upsert_jobs
+from app.database import get_dismissed_jobs, get_job, get_saved_jobs, log_activity, set_status, upsert_jobs
 from app.models.job import JobListing, JobListingPublic, StatusUpdate
 from app.models.search import SearchRequest
 from app.services.deduplication import deduplicate
@@ -31,6 +31,7 @@ def _to_row(job: JobListing) -> dict:
         "status": job.status.value,
         "sources": json.dumps(sources),
         "score_breakdown": json.dumps(job.score_breakdown),
+        "glassdoor_rating": job.glassdoor_rating,
     }
 
 
@@ -39,6 +40,7 @@ def _from_row(row: dict) -> JobListing:
     row["remote"] = bool(row["remote"])
     row["sources"] = json.loads(row.get("sources") or "[]") or [row["source"]]
     row["score_breakdown"] = json.loads(row.get("score_breakdown") or "{}")
+    row.setdefault("glassdoor_rating", None)
     return JobListing(**row)
 
 
@@ -51,6 +53,8 @@ async def search_jobs(
     unique = deduplicate(raw)
     ranked = score_and_rank(unique, req)
     await upsert_jobs([_to_row(j) for j in ranked], access_code)
+    loc = f" in {req.location}" if req.location else ""
+    await log_activity(access_code, "search", f"Searched: {req.title}{loc} ({len(ranked)} results)")
     return ranked
 
 
@@ -86,4 +90,10 @@ async def update_status(
     row = await set_status(job_id, body.status.value, access_code)
     if not row:
         raise HTTPException(status_code=404, detail="Job not found")
-    return _from_row(row)
+    job = _from_row(row)
+    label = f"{job.title} at {job.company}"
+    if body.status.value == "saved":
+        await log_activity(access_code, "job_saved", f"Saved: {label}", entity_id=job_id)
+    elif body.status.value == "dismissed":
+        await log_activity(access_code, "job_dismissed", f"Dismissed: {label}", entity_id=job_id)
+    return job

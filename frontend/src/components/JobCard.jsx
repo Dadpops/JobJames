@@ -44,11 +44,12 @@ function isStaleDate(postedAt) {
   return (Date.now() - posted.getTime()) > 30 * 86400000
 }
 
-export default function JobCard({ job, onStatusChange, isExpanded = false, onExpand = () => {} }) {
+export default function JobCard({ job, onStatusChange, isExpanded = false, onExpand = () => {}, isFocused = false }) {
   const [trackStatus, setTrackStatus]   = useState('Found')
   const [trackNotes, setTrackNotes]     = useState('')
   const [tracked, setTracked]           = useState(false)
   const [tracking, setTracking]         = useState(false)
+  const [appliedQuick, setAppliedQuick] = useState(false)
   const [showEmail, setShowEmail]       = useState(false)
   const [emailAddr, setEmailAddr]       = useState('')
   const [emailState, setEmailState]     = useState('idle')
@@ -105,6 +106,19 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
     }
   }
 
+  async function handleQuickApply(e) {
+    e.stopPropagation()
+    if (appliedQuick) return
+    setAppliedQuick(true)
+    try {
+      const entry = await addJobToTracker(job.id)
+      await updateTrackerEntry(entry.id, { status: 'Applied' })
+      setTracked(true)
+    } catch {
+      // silently succeed — user can fix in tracker
+    }
+  }
+
   async function handleSendEmail(e) {
     e.preventDefault()
     e.stopPropagation()
@@ -123,7 +137,7 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
 
   return (
     <article
-      className={`job-card${stale ? ' job-card-stale' : ''}${isExpanded ? ' job-card-open' : ''}${isDismissed ? ' job-card-dismissed' : ''}`}
+      className={`job-card${stale ? ' job-card-stale' : ''}${isExpanded ? ' job-card-open' : ''}${isDismissed ? ' job-card-dismissed' : ''}${isFocused ? ' job-card-focused' : ''}`}
       onClick={handleCardClick}
     >
       {/* ── Collapsed header ──────────────────────────────────── */}
@@ -155,6 +169,15 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
             <span className="meta-sep">·</span>
             <span className="source-pill">{job.source}</span>
             {extraSources.map(s => <span key={s} className="source-pill source-pill-extra">{s}</span>)}
+            {job.glassdoor_rating && (
+              <><span className="meta-sep">·</span>
+              <a
+                href={`https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(job.company)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="glassdoor-pill"
+                onClick={e => e.stopPropagation()}
+              >★ {job.glassdoor_rating.toFixed(1)}</a></>
+            )}
           </div>
 
           <div className="job-tags">
@@ -168,8 +191,18 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
           )}
         </div>
 
-        {/* Right — dismiss or undo */}
+        {/* Right — quick actions + dismiss/undo */}
         <div className="job-right">
+          {!isDismissed && (
+            <button
+              className={`btn-act btn-quick-apply${appliedQuick ? ' quick-apply-done' : ''}`}
+              onClick={handleQuickApply}
+              disabled={appliedQuick}
+              title="Track as Applied"
+            >
+              {appliedQuick ? '✓ Applied' : '✓ Applied'}
+            </button>
+          )}
           {isDismissed ? (
             <button className="btn-act btn-undo-dismiss" onClick={handleUndo}>
               Undo
@@ -207,6 +240,20 @@ export default function JobCard({ job, onStatusChange, isExpanded = false, onExp
               </div>
               {age && <div className="detail-pair"><span className="detail-label">Posted</span><span className="detail-val">{age}</span></div>}
               <div className="detail-pair"><span className="detail-label">Source</span><span className="detail-val" style={{textTransform:'capitalize'}}>{[job.source, ...extraSources].join(', ')}</span></div>
+              {job.glassdoor_rating && (
+                <div className="detail-pair">
+                  <span className="detail-label">Glassdoor</span>
+                  <a
+                    href={`https://www.glassdoor.com/Search/results.htm?keyword=${encodeURIComponent(job.company)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="detail-val glassdoor-rating"
+                  >
+                    <span className="glassdoor-star">★</span>
+                    {job.glassdoor_rating.toFixed(1)}
+                    <span className="glassdoor-max">/5</span>
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

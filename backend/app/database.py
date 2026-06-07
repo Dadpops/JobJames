@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     updated_at          TEXT,
     sources             TEXT,
     score_breakdown     TEXT,
+    glassdoor_rating    REAL,
     PRIMARY KEY (id, access_code)
 );
 
@@ -132,6 +133,16 @@ CREATE TABLE IF NOT EXISTS saved_searches (
     result_limit    INTEGER DEFAULT 10,
     PRIMARY KEY (id, access_code)
 );
+
+CREATE TABLE IF NOT EXISTS activity_log (
+    id          TEXT NOT NULL,
+    access_code TEXT NOT NULL,
+    event_type  TEXT NOT NULL,
+    description TEXT NOT NULL,
+    entity_id   TEXT,
+    created_at  TEXT NOT NULL,
+    PRIMARY KEY (id, access_code)
+);
 """
 
 
@@ -140,11 +151,15 @@ async def init_db() -> None:
     async with _engine.begin() as conn:
         for stmt in statements:
             await conn.execute(text(stmt))
-        # Migration: add email column to users table (ignored if it already exists)
-        try:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT"))
-        except Exception:
-            pass
+        # Migrations (ignored if column already exists)
+        for migration in [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS glassdoor_rating REAL",
+        ]:
+            try:
+                await conn.execute(text(migration))
+            except Exception:
+                pass
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
@@ -202,15 +217,18 @@ async def upsert_jobs(jobs: list[dict], access_code: str) -> None:
             text("""
                 INSERT INTO jobs (id, access_code, title, company, location, remote,
                                   salary_min, salary_max, url, source, description_snippet,
-                                  posted_at, score, status, sources, score_breakdown, updated_at)
+                                  posted_at, score, status, sources, score_breakdown,
+                                  glassdoor_rating, updated_at)
                 VALUES (:id, :access_code, :title, :company, :location, :remote,
                         :salary_min, :salary_max, :url, :source, :description_snippet,
-                        :posted_at, :score, :status, :sources, :score_breakdown, :updated_at)
+                        :posted_at, :score, :status, :sources, :score_breakdown,
+                        :glassdoor_rating, :updated_at)
                 ON CONFLICT (id, access_code) DO UPDATE SET
-                    score           = EXCLUDED.score,
-                    sources         = EXCLUDED.sources,
-                    score_breakdown = EXCLUDED.score_breakdown,
-                    updated_at      = EXCLUDED.updated_at
+                    score            = EXCLUDED.score,
+                    sources          = EXCLUDED.sources,
+                    score_breakdown  = EXCLUDED.score_breakdown,
+                    glassdoor_rating = EXCLUDED.glassdoor_rating,
+                    updated_at       = EXCLUDED.updated_at
             """),
             rows,
         )
@@ -479,3 +497,45 @@ async def touch_saved_search(search_id: str, access_code: str) -> None:
             text("UPDATE saved_searches SET last_run = :now WHERE id = :id AND access_code = :ac"),
             {"now": _now(), "id": search_id, "ac": access_code},
         )
+
+
+# ── Activity Log ──────────────────────────────────────────────────────────────
+
+import uuid as _uuid
+
+
+async def log_activity(access_code: str, event_type: str, description: str, entity_id: str | None = None) -> None:
+    """Fire-and-forget activity logging; errors are silently swallowed."""
+    try:
+        async with _engine.begin() as conn:
+            await conn.execute(
+                text("""
+                    INSERT INTO activity_log (id, access_code, event_type, description, entity_id, created_at)
+                    VALUES (:id, :ac, :event_type, :description, :entity_id, :now)
+                """),
+                {
+                    "id": str(_uuid.uuid4()),
+                    "ac": access_code,
+                    "event_type": event_type,
+                    "description": description,
+                    "entity_id": entity_id,
+                    "now": _now(),
+                },
+            )
+    except Exception:
+        pass
+
+
+async def get_activity(access_code: str, limit: int = 30) -> list[dict]:
+    async with _engine.connect() as conn:
+        result = await conn.execute(
+            text("""
+                SELECT id, event_type, description, entity_id, created_at
+                FROM activity_log
+                WHERE access_code = :ac
+                ORDER BY created_at DESC
+                LIMIT :limit
+            """),
+            {"ac": access_code, "limit": limit},
+        )
+        return [dict(r) for r in result.mappings().fetchall()]

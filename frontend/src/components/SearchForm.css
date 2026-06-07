@@ -83,6 +83,55 @@
   color: var(--text);
 }
 
+/* ── Search history dropdown ─────────────────────────────── */
+.history-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--elevated);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  list-style: none;
+  padding: 4px 0;
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.history-label {
+  padding: 4px 12px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.history-item:hover { background: rgba(110, 106, 240, 0.1); }
+
+.history-icon { color: var(--text-faint); font-size: 11px; }
+
+.history-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: color 0.1s;
+}
+
+.history-item:hover .history-title { color: var(--text); }
+
+.history-location { font-size: 11px; color: var(--text-faint); }
+
 /* ── Filter chips row ────────────────────────────────────── */
 .filter-chips-row {
   display: flex;

@@ -41,6 +41,7 @@ class JobListing(BaseModel):
     status: JobStatus = JobStatus.new
     sources: list[str] = []
     score_breakdown: dict = {}
+    glassdoor_rating: Optional[float] = None
 
 
 class JobListingPublic(BaseModel):
@@ -58,6 +59,7 @@ class JobListingPublic(BaseModel):
     posted_at: Optional[str] = None
     status: JobStatus = JobStatus.new
     sources: list[str] = []
+    glassdoor_rating: Optional[float] = None
 
 
 class StatusUpdate(BaseModel):

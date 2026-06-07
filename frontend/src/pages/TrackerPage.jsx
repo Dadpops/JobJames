@@ -2,11 +2,76 @@ import { Fragment, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   getTrackerEntries, addTrackerEntry, updateTrackerEntry, deleteTrackerEntry,
-  reorderTrackerEntries,
+  reorderTrackerEntries, getSettings, saveSettings,
 } from '../api/client'
 import { SkeletonTableRows } from '../components/Skeleton'
 import EmptyState, { TrackerEmptyIcon } from '../components/EmptyState'
 import './TrackerPage.css'
+
+function getWeekStart() {
+  const d = new Date()
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  const mon = new Date(d.setDate(diff))
+  return mon.toISOString().slice(0, 10)
+}
+
+function WeeklyGoal({ entries, goal, onGoalChange }) {
+  const weekStart = getWeekStart()
+  const applied = entries.filter(e =>
+    ['Applied', 'Interviewing', 'Offer'].includes(e.status) &&
+    e.date_added >= weekStart
+  ).length
+  const pct = goal > 0 ? Math.min(100, Math.round((applied / goal) * 100)) : 0
+  const done = applied >= goal && goal > 0
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(String(goal))
+
+  function commitGoal() {
+    setEditing(false)
+    const v = parseInt(draft, 10)
+    if (!isNaN(v) && v > 0 && v !== goal) onGoalChange(v)
+  }
+
+  return (
+    <div className="weekly-goal">
+      <div className="weekly-goal-header">
+        <span className="weekly-goal-label">This week</span>
+        <span className={`weekly-goal-count${done ? ' weekly-goal-done' : ''}`}>
+          {applied}
+          {editing ? (
+            <span className="weekly-goal-goal-edit">
+              /
+              <input
+                type="number" min="1" max="99"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onBlur={commitGoal}
+                onKeyDown={e => { if (e.key === 'Enter') commitGoal(); if (e.key === 'Escape') setEditing(false) }}
+                autoFocus
+                className="weekly-goal-input"
+              />
+              <span className="weekly-goal-unit">applied</span>
+            </span>
+          ) : (
+            <span
+              className="weekly-goal-goal"
+              onClick={() => { setDraft(String(goal)); setEditing(true) }}
+              title="Click to change goal"
+            >/{goal} applied</span>
+          )}
+        </span>
+      </div>
+      <div className="weekly-goal-bar">
+        <div
+          className="weekly-goal-fill"
+          style={{ width: `${pct}%`, background: done ? 'var(--green)' : 'var(--accent)' }}
+        />
+      </div>
+      {done && <span className="weekly-goal-badge">Goal reached! 🎉</span>}
+    </div>
+  )
+}
 
 const STATUSES = ['Found', 'Reviewing', 'Applied', 'Interviewing', 'Offer', 'Rejected', 'Dismissed']
 
@@ -190,9 +255,16 @@ export default function TrackerPage() {
   const [filterStatus, setFilterStatus] = useState(
     () => location.state?.filterStatus || 'active'
   ) // 'active' | status | null (all)
+  const [weeklyGoal, setWeeklyGoal] = useState(5)
 
   useEffect(() => {
-    getTrackerEntries().then(setEntries).finally(() => setLoading(false))
+    Promise.all([getTrackerEntries(), getSettings()])
+      .then(([es, cfg]) => {
+        setEntries(es)
+        const g = parseInt(cfg.weekly_application_goal, 10)
+        if (!isNaN(g) && g > 0) setWeeklyGoal(g)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -222,6 +294,11 @@ export default function TrackerPage() {
 
   async function handleDelete(id) {
     try { await deleteTrackerEntry(id); setEntries(es => es.filter(e => e.id !== id)) } catch {}
+  }
+
+  async function handleGoalChange(newGoal) {
+    setWeeklyGoal(newGoal)
+    try { await saveSettings({ weekly_application_goal: String(newGoal) }) } catch {}
   }
 
   function toggleExpand(id) {
@@ -269,7 +346,9 @@ export default function TrackerPage() {
       <div className="tracker-header">
         <h1 className="tracker-title">Application Tracker</h1>
         <div className="tracker-header-actions">
+          <WeeklyGoal entries={entries} goal={weeklyGoal} onGoalChange={handleGoalChange} />
           <a href="/api/tracker/export/csv" className="btn-export" download="tracker.csv">Export CSV</a>
+          <button className="btn-export" onClick={() => window.print()} title="Print / Export PDF">Print PDF</button>
           <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Add Job</button>
         </div>
       </div>
